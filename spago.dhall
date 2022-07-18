@@ -29,7 +29,11 @@ to generate this file without the comments in this block.
   , "prelude"
   , "profunctor"
   , "refs"
+  , "routing"
+  , "routing-duplex"
+  , "safe-coerce"
   , "simple-json"
+  , "transformers"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
