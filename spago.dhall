@@ -23,6 +23,7 @@ to generate this file without the comments in this block.
   , "halogen"
   , "halogen-hooks"
   , "halogen-store"
+  , "halogen-subscriptions"
   , "hyrule"
   , "maybe"
   , "newtype"
@@ -34,6 +35,7 @@ to generate this file without the comments in this block.
   , "safe-coerce"
   , "simple-json"
   , "transformers"
+  , "tuples"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
