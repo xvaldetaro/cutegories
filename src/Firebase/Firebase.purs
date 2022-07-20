@@ -11,6 +11,7 @@ import Joyride.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
 type FirebaseEnv =
   { app :: FirebaseApp, analytics :: FirebaseAnalytics, db :: Firestore, auth :: FirebaseAuth }
 
+
 startFirebase :: Aff FirebaseEnv
 startFirebase = do
   app <- firebaseAppAff
