@@ -10,7 +10,6 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Firebase.Firestore (addPlayerAff)
 import HTML.Utils (css)
-import Halogen (lift)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -37,7 +36,7 @@ component = Hooks.component \_ _ -> Hooks.do
     handleClick = do
       {fb} <- getStore
       void $ H.liftAff $ addPlayerAff fb.db (Player {name})
-      lift $ navigate PlayerList
+      navigate PlayerList
 
   Hooks.pure do
     HH.div_
