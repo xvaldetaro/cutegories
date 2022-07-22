@@ -9,7 +9,8 @@ import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
 
 data Route
-  = PlayerList
+  = Landing
+  | PlayerList
   | CreatePlayer
 
 derive instance genericRoute :: Generic Route _
@@ -20,6 +21,7 @@ instance showRoute :: Show Route where
 
 routeCodec :: RouteDuplex' Route
 routeCodec = root $ sum
-  { "PlayerList": noArgs
+  { "Landing": noArgs
+  , "PlayerList": "playerlist" / noArgs
   , "CreatePlayer": "createplayer" / noArgs
   }

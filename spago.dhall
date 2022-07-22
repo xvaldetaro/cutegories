@@ -34,8 +34,10 @@ to generate this file without the comments in this block.
   , "routing-duplex"
   , "safe-coerce"
   , "simple-json"
+  , "string-parsers"
   , "transformers"
   , "tuples"
+  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

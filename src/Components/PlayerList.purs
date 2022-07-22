@@ -6,8 +6,10 @@ import Core.Capa.Navigate (class Navigate, navigate)
 import Core.Route as Route
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Dumb.Button as Dumb
+import Dumb.Button as Dumb.Button
+import Dumb.VerticalListClickable as Dumb.VerticalListClickable
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class.Console (log)
 import Firebase.Firestore (getPlayersAff)
 import HTML.Utils (css)
 import Halogen as H
@@ -33,6 +35,7 @@ component =
       pure Nothing
 
     let handleCreatePlayerClick = navigate Route.CreatePlayer
+    let handlePlayerClick p = log $ "player clicked: " <> show p
 
     Hooks.pure do
       case players of
@@ -40,9 +43,9 @@ component =
         Just players' ->
           HH.div
             [ css "container mx-auto px-4" ]
-            [ Dumb.button "Create Player" handleCreatePlayerClick
+            [ Dumb.Button.button "Create Player" handleCreatePlayerClick
             , HH.text "Players:"
-            , HH.ul_ (renderPlayer <$> players')
+            , Dumb.VerticalListClickable.verticalListClickable playerItems handlePlayerClick
             ]
-        where
-        renderPlayer (Player p) = HH.li_ [ HH.text p.name ]
+          where
+          playerItems = (\(Player p) -> {text: p.name}) <$> players'

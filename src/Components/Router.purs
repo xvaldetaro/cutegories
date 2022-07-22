@@ -3,17 +3,24 @@ module Components.Router where
 import Prelude
 
 import Components.CreatePlayer as CreatePlayer
+import Components.Dumb.Icon as Icon
+import Components.Landing as Landing
 import Components.PlayerList as PlayerList
 import Core.Capa.Navigate (class Navigate, navigate)
+import Core.HTMLUtils (safeHref)
 import Core.Route (Route(..), routeCodec)
+import Core.Route as Route
 import Data.Const (Const)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Dumb.Nav as Nav
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import HTML.Utils (css)
+import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HP
 import Halogen.Store.Monad (class MonadStore, updateStore)
 import Halogen.Subscription as HS
 import Platform.OpaqueSlot (OpaqueSlot)
@@ -26,6 +33,7 @@ import Type.Proxy (Proxy(..))
 type ChildSlots =
   ( playerList :: OpaqueSlot Unit
   , createPlayer :: OpaqueSlot Unit
+  , landing :: OpaqueSlot Unit
   )
 
 type Query :: ∀ k. k -> Type
@@ -55,11 +63,24 @@ component =
   initialState _ = { route: Nothing, hashSubscriptionDisposable: pure unit }
 
   render :: State -> H.ComponentHTML Action ChildSlots m
-  render { route } = case route of
-    Nothing -> HH.div [ css "text-red-300" ] [ HH.text "Invalid address." ]
-    Just route' -> case route' of
-      PlayerList -> HH.slot_ (Proxy :: _ "playerList") unit PlayerList.component unit
-      CreatePlayer -> HH.slot_ (Proxy :: _ "createPlayer") unit CreatePlayer.component unit
+  render { route } = HH.div
+    [ HP.classes $
+      [ ClassName "font-sans text-slate-700 min-h-screen w-screen"
+      , ClassName "flex flex-col bg-[#faf9f9]"
+      ]
+    ]
+    [ Nav.nav route
+    , mainContent
+    ]
+    where
+    mainContent = case route of
+      Nothing -> HH.div [ css "text-red-300" ] [ HH.text "Invalid address." ]
+      Just route' -> HH.div [ css "container mx-auto"]
+        [ case route' of
+            Landing -> HH.slot_ (Proxy :: _ "landing") unit Landing.component unit
+            PlayerList -> HH.slot_ (Proxy :: _ "playerList") unit PlayerList.component unit
+            CreatePlayer -> HH.slot_ (Proxy :: _ "createPlayer") unit CreatePlayer.component unit
+        ]
 
   handleAction = case _ of
     Initialize -> do
@@ -75,7 +96,7 @@ component =
       -- first we'll get the route the user landed on
       initialRoute <- hush <<< (RD.parse routeCodec) <$> H.liftEffect getHash
       -- then we'll navigate to the new route (also setting the hash)
-      navigate $ fromMaybe PlayerList initialRoute
+      navigate $ fromMaybe Landing initialRoute
 
     OnRouteChanged dest -> do
       { route } <- H.get
