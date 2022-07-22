@@ -1,4 +1,4 @@
-module Firebase.Config where
+module Platform.Firebase.Config where
 
 
 import Control.Promise (Promise, toAffE)

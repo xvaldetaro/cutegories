@@ -3,13 +3,13 @@ module Components.Bootstrapper where
 import Prelude
 
 import Components.Router as Router
-import Core.AppM (runAppM)
+import App.AppM (runAppM)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
-import Firebase.Firebase (FirebaseEnv, startFirebase)
+import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 import Halogen as H
 import Halogen.HTML as HH
-import Store.MyStore as MS
+import App.Store.MyStore as MS
 import Type.Proxy (Proxy(..))
 
 type Slots = (router :: H.Slot Router.Query Void Unit)

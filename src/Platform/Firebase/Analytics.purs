@@ -1,4 +1,4 @@
-module Joyride.Firebase.Analytics where
+module Platform.Firebase.Analytics where
 
 
 import Prelude
@@ -6,7 +6,7 @@ import Prelude
 import Control.Promise (Promise, toAffE)
 import Effect (Effect)
 import Effect.Aff (Aff)
-import Firebase.Config (FirebaseApp)
+import Platform.Firebase.Config (FirebaseApp)
 
 data FirebaseAnalytics
 

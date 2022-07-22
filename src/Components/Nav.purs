@@ -3,11 +3,11 @@ module Dumb.Nav where
 import Prelude
 
 import Components.Dumb.Icon as Icon
-import Core.HTMLUtils (safeHref)
-import Core.Route (Route)
-import Core.Route as Route
+import Platform.Html.Utils (safeHref)
+import App.Route (Route)
+import App.Route as Route
 import Data.Maybe (Maybe, fromMaybe)
-import HTML.Utils (css, cx)
+import Platform.Html.CssUtils (css, cx)
 import Halogen (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP

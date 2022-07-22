@@ -1,4 +1,4 @@
-module Core.Route where
+module App.Route where
 
 import Prelude hiding ((/))
 

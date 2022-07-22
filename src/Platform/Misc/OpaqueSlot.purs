@@ -1,4 +1,4 @@
-module Platform.OpaqueSlot where
+module Platform.Misc.OpaqueSlot where
 
 import Prelude
 

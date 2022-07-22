@@ -8,7 +8,7 @@ import Data.Newtype (unwrap)
 import Data.String (joinWith, null)
 import Halogen (ClassName)
 import Halogen.HTML as HH
-import Svg.Renderer.Halogen (icon)
+import Platform.Html.SvgIcon (icon)
 
 type Icon
   = forall p r i. Array (HH.IProp r i) -> HH.HTML p i

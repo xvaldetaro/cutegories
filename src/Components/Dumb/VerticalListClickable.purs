@@ -2,7 +2,7 @@ module Dumb.VerticalListClickable where
 
 import Prelude
 
-import HTML.Utils (css)
+import Platform.Html.CssUtils (css)
 import Halogen (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE

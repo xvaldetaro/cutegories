@@ -1,12 +1,12 @@
-module Firebase.Firebase where
+module Platform.Firebase.Firebase where
 
 import Prelude
 
 import Effect.Aff (Aff)
-import Firebase.Auth (FirebaseAuth, firebaseAuthAff)
-import Firebase.Config (FirebaseApp, firebaseAppAff)
-import Firebase.Firestore (Firestore, firestoreDbAff)
-import Joyride.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
+import Platform.Firebase.Auth (FirebaseAuth, firebaseAuthAff)
+import Platform.Firebase.Config (FirebaseApp, firebaseAppAff)
+import Platform.Firebase.Firestore (Firestore, firestoreDbAff)
+import Platform.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
 
 type FirebaseEnv =
   { app :: FirebaseApp, analytics :: FirebaseAnalytics, db :: Firestore, auth :: FirebaseAuth }

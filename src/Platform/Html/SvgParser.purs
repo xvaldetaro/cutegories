@@ -1,8 +1,8 @@
 -- | A module to Parse an SVG document `String` as `SvgNode`.  If you are using
--- | `purescript-halogen`, `Svg.Parser.Halogen` is for you. If you are using
+-- | `purescript-halogen`, `Platform.Html.SvgParser.Halogen` is for you. If you are using
 -- | other view libraries, you need to write an adapter to convert `SvgNode` to
 -- | the `HTML` type you are using.
-module Svg.Parser
+module Platform.Html.SvgParser
   ( SvgNode(..)
   , Element(..)
   , SvgAttribute(..)

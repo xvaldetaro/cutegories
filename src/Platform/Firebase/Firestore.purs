@@ -1,4 +1,4 @@
-module Firebase.Firestore where
+module Platform.Firebase.Firestore where
 
 import Prelude
 
@@ -12,8 +12,8 @@ import Effect.Aff (Aff, error, launchAff_, throwError, try)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 import FRP.Event (Event, makeEvent)
-import Firebase.Auth (FirebaseAuth)
-import Firebase.Config (FirebaseApp)
+import Platform.Firebase.Auth (FirebaseAuth)
+import Platform.Firebase.Config (FirebaseApp)
 import Foreign (Foreign)
 import Models.Player (Player(..))
 import Simple.JSON as JSON

@@ -1,9 +1,9 @@
-module Core.AppM where
+module App.AppM where
 
 import Prelude
 
-import Core.Capa.Navigate (class Navigate)
-import Core.Route as Route
+import App.Capa.Navigate (class Navigate)
+import App.Route as Route
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -12,7 +12,7 @@ import Halogen.Store.Monad (class MonadStore, StoreT, runStoreT)
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
 import Safe.Coerce (coerce)
-import Store.MyStore as MS
+import App.Store.MyStore as MS
 
 
 newtype AppM a = AppM (StoreT MS.Action MS.Store Aff a)

@@ -1,9 +1,9 @@
-module Core.Capa.Navigate where
+module App.Capa.Navigate where
 
 import Prelude
 
 import Control.Monad.Trans.Class (lift)
-import Core.Route (Route)
+import App.Route (Route)
 import Halogen (HalogenM)
 import Halogen.Hooks (HookM)
 

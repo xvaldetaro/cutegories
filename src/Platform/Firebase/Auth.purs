@@ -1,4 +1,4 @@
-module Firebase.Auth
+module Platform.Firebase.Auth
   ( authStateChangedEventWithAnonymousAccountCreation
   , firebaseAuthAff
   , User(..)
@@ -22,7 +22,7 @@ import Effect.Class.Console as Log
 import Effect.Ref as Ref
 import FRP.Event (Event, makeEvent)
 import Foreign (Foreign)
-import Firebase.Config (FirebaseApp)
+import Platform.Firebase.Config (FirebaseApp)
 import Simple.JSON as JSON
 
 type MultiFactorInfo =

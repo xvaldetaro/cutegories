@@ -2,14 +2,14 @@ module Components.CreatePlayer where
 
 import Prelude
 
-import Core.Capa.Navigate (class Navigate, navigate)
-import Core.Route (Route(..))
+import App.Capa.Navigate (class Navigate, navigate)
+import App.Route (Route(..))
 import Data.Tuple.Nested ((/\))
 import Dumb.Button as Dumb
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import Firebase.Firestore (addPlayerAff)
-import HTML.Utils (css)
+import Platform.Firebase.Firestore (addPlayerAff)
+import Platform.Html.CssUtils (css)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -18,7 +18,7 @@ import Halogen.Hooks (HookM)
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Models.Player (Player(..))
-import Store.MyStore as MS
+import App.Store.MyStore as MS
 
 component
   :: ∀ q m

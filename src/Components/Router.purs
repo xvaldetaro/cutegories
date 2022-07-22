@@ -6,28 +6,28 @@ import Components.CreatePlayer as CreatePlayer
 import Components.Dumb.Icon as Icon
 import Components.Landing as Landing
 import Components.PlayerList as PlayerList
-import Core.Capa.Navigate (class Navigate, navigate)
-import Core.HTMLUtils (safeHref)
-import Core.Route (Route(..), routeCodec)
-import Core.Route as Route
+import App.Capa.Navigate (class Navigate, navigate)
+import Platform.Html.Utils (safeHref)
+import App.Route (Route(..), routeCodec)
+import App.Route as Route
 import Data.Const (Const)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Dumb.Nav as Nav
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import HTML.Utils (css)
+import Platform.Html.CssUtils (css)
 import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Store.Monad (class MonadStore, updateStore)
 import Halogen.Subscription as HS
-import Platform.OpaqueSlot (OpaqueSlot)
+import Platform.Misc.OpaqueSlot (OpaqueSlot)
 import Routing.Duplex (parse)
 import Routing.Duplex as RD
 import Routing.Hash (getHash, matchesWith)
-import Store.MyStore as MS
+import App.Store.MyStore as MS
 import Type.Proxy (Proxy(..))
 
 type ChildSlots =

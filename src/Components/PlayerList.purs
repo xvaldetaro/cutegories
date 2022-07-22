@@ -2,22 +2,22 @@ module Components.PlayerList where
 
 import Prelude
 
-import Core.Capa.Navigate (class Navigate, navigate)
-import Core.Route as Route
+import App.Capa.Navigate (class Navigate, navigate)
+import App.Route as Route
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Dumb.Button as Dumb.Button
 import Dumb.VerticalListClickable as Dumb.VerticalListClickable
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
-import Firebase.Firestore (getPlayersAff)
-import HTML.Utils (css)
+import Platform.Firebase.Firestore (getPlayersAff)
+import Platform.Html.CssUtils (css)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Models.Player (Player(..))
-import Store.MyStore as MS
+import App.Store.MyStore as MS
 
 type State = { players :: Maybe (Array Player) }
 data Action = Initialize | CreatePlayerClick

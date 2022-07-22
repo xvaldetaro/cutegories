@@ -1,14 +1,17 @@
-module HTML.Utils where
+module Platform.Html.Utils where
 
 import Prelude
 
+import App.Route (Route, routeCodec)
 import Data.Maybe (Maybe(..))
-import Halogen (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
+import Routing.Duplex (print)
 
-css :: forall r i. String -> HH.IProp (class :: String | r) i
-css = HP.class_ <<< HH.ClassName
+-- | We must provide a `String` to the "href" attribute, but we represent routes with the much
+-- | better `Route` type. This utility is a drop-in replacement for `href` that uses `Route`.
+safeHref :: forall r i. Route -> HH.IProp (href :: String | r) i
+safeHref = HP.href <<< append "#" <<< print routeCodec
 
 -- | Sometimes we need to deal with elements which may or may not exist. This function lets us
 -- | provide rendering for the element if it exists, and renders an empty node otherwise.
@@ -21,6 +24,3 @@ maybeElem _ _ = HH.text ""
 -- | to minimize the work performed each render.
 whenElem :: forall p i. Boolean -> (Unit -> HH.HTML p i) -> HH.HTML p i
 whenElem cond f = if cond then f unit else HH.text ""
-
-cx :: ClassName -> Boolean -> ClassName
-cx c cond = if cond then c else ClassName ""
