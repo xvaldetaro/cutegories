@@ -15,7 +15,7 @@ import FRP.Event (Event, makeEvent)
 import Platform.Firebase.Auth (FirebaseAuth)
 import Platform.Firebase.Config (FirebaseApp)
 import Foreign (Foreign)
-import Models.Player (Player(..))
+import Models.Models (Player(..))
 import Simple.JSON as JSON
 
 data Firestore

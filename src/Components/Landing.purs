@@ -20,7 +20,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
-import Models.Player (Player(..))
+import Models.Models (Player(..))
 import App.Store.MyStore as MS
 
 type State = { players :: Maybe (Array Player) }

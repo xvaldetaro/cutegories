@@ -17,7 +17,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Hooks (HookM)
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
-import Models.Player (Player(..))
+import Models.Models (Player(..))
 import App.Store.MyStore as MS
 
 component
@@ -35,7 +35,7 @@ component = Hooks.component \_ _ -> Hooks.do
     handleClick :: HookM m Unit
     handleClick = do
       {fb} <- getStore
-      void $ H.liftAff $ addPlayerAff fb.db (Player {name})
+      void $ H.liftAff $ addPlayerAff fb.db (Player {name, id: "asdf"})
       navigate PlayerList
 
   Hooks.pure do
