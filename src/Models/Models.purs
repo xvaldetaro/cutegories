@@ -7,7 +7,7 @@ import Data.Newtype (class Newtype)
 import Simple.JSON as JSON
 
 type PlayerIn r = { name :: String | r}
-newtype Player = Player (PlayerIn ( id :: String ))
+newtype Player = Player (PlayerIn ())
 newtype PlayerInput = PlayerInput { name :: String }
 
 newtype Room = Room
@@ -24,6 +24,7 @@ newtype Chat = Chat (Array ChatMessage)
 
 -- Derives
 derive instance newtypePlayer :: Newtype Player _
+derive newtype instance showPlayer :: Show Player
 derive newtype instance readForeignPlayer :: JSON.ReadForeign Player
 derive newtype instance writeForeignPlayer :: JSON.WriteForeign Player
 derive newtype instance eqPlayer :: Eq Player

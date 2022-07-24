@@ -3,10 +3,10 @@ module Dumb.Input where
 import Prelude
 
 import Components.Dumb.Styles (buttonCss, buttonCss')
-import HTML.Utils (css)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Platform.Html.CssUtils (css)
 
 input :: ∀ props act. String -> String -> (String -> act) -> HH.HTML props act
 input label id cb =

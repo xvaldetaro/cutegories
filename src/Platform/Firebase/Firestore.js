@@ -1,4 +1,4 @@
-import {collection, getDocs, addDoc} from "firebase/firestore"
+import {collection, getDoc, getDocs, addDoc, doc} from "firebase/firestore"
 
 // Initialize Cloud Firestore and get a reference to the service
 export const firestoreDb = (app) => () =>
@@ -29,6 +29,23 @@ export const getPlayers = (db) => () =>
 export function addDoc_(db, path, docObj) {
 		console.log("addDoc", docObj);
 		return addDoc(collection(db, path), docObj);
+}
+
+export function getDoc_(db, path, id) {
+		console.log("getDoc", path, id);
+		return getDoc(doc(db, path, id)).then((r) => {
+			const res = r.data();
+			console.log("got doc: ", res)
+			return res;
+		});
+}
+export function getDocs_(db, path) {
+		return getDocs(collection(db, path))
+			.then((snapshot) => {
+				const res = snapshot.docs.map((d) => d.data())
+				console.log("got docs: ", res)
+				return res;
+			});
 }
 // export const claimPlayer = (auth) => (db) => (player) => (player) => () =>
 // 	import("firebase/firestore").then(({ updateDoc, doc }) => {
