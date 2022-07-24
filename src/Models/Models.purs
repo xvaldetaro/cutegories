@@ -6,7 +6,9 @@ import Data.DateTime.Instant (Instant)
 import Data.Newtype (class Newtype)
 import Simple.JSON as JSON
 
-newtype Player = Player { name :: String, id :: String }
+type PlayerIn r = { name :: String | r}
+newtype Player = Player (PlayerIn ( id :: String ))
+newtype PlayerInput = PlayerInput { name :: String }
 
 newtype Room = Room
   { id :: String

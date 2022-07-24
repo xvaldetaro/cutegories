@@ -10,6 +10,7 @@ import Routing.Duplex.Generic.Syntax ((/))
 
 data Route
   = Landing
+  | PlaygroundDummy
   | PlayerList
   | CreatePlayer
 
@@ -22,6 +23,7 @@ instance showRoute :: Show Route where
 routeCodec :: RouteDuplex' Route
 routeCodec = root $ sum
   { "Landing": noArgs
+  , "PlaygroundDummy": "playgrounddummy" / noArgs
   , "PlayerList": "playerlist" / noArgs
   , "CreatePlayer": "createplayer" / noArgs
   }
