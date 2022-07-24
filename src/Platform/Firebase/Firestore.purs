@@ -2,24 +2,17 @@ module Platform.Firebase.Firestore where
 
 import Prelude
 
-import Control.Alt ((<|>))
 import Control.Promise (Promise, toAffE)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe(..))
-import Data.Profunctor (lcmap)
+import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Effect (Effect)
-import Effect.Aff (Aff, error, launchAff_, throwError, try)
-import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Effect.Ref as Ref
-import Effect.Uncurried (EffectFn2, EffectFn3, runEffectFn2, runEffectFn3)
-import FRP.Event (Event, makeEvent)
+import Effect.Aff (Aff, error, throwError, try)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, runEffectFn2, runEffectFn3, runEffectFn4)
 import Foreign (Foreign)
-import Models.Models (Chat(..), Player(..), PlayerInput(..), Room(..))
-import Platform.Firebase.Auth (FirebaseAuth)
+import Models.Models (Chat, Player, PlayerInput, Room)
 import Platform.Firebase.Config (FirebaseApp)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 import Simple.JSON as JSON
@@ -38,47 +31,24 @@ type DocumentReference =
 
 data DocumentSnapshot
 
-class FirePath a where
-  path :: a -> String
-
-instance firePathPlayerInput :: FirePath PlayerInput where
-  path _ = "players"
-instance firePathRoom :: FirePath Room where
-  path _ = "rooms"
-instance firePathChat :: FirePath Chat where
-  path _ = "chats"
-
-foreign import addPlayer :: Firestore -> Foreign -> Effect (Promise DocumentReference)
 foreign import removeUndefineds :: Foreign -> Foreign
-
-addPlayerAff :: Firestore -> Player -> Aff DocumentReference
-addPlayerAff fs r = toAffE $ addPlayer fs (removeUndefineds (JSON.writeImpl r))
-
-foreign import getPlayer :: Firestore -> String -> Effect (Promise Foreign)
-foreign import getPlayers :: Firestore -> Effect (Promise Foreign)
-
-getPlayerAff :: Firestore -> String -> Aff (Maybe Player)
-getPlayerAff fs id = do
-  ds <- toAffE $ getPlayer fs id
-  case JSON.read ds of
-    Right r -> pure r
-    Left e -> throwError (error (show e))
-
-getPlayersAff :: Firestore -> Aff (Array Player)
-getPlayersAff fs = do
-  ds <- toAffE $ getPlayers fs
-  case JSON.read ds of
-    Right r -> pure r
-    Left e -> throwError (error (show e))
 
 foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocumentReference)
 foreign import getDoc_ :: EffectFn3 Firestore String String (Promise Foreign)
 foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
+foreign import observeDoc_
+  :: EffectFn4 Firestore String String (Foreign -> Effect Unit) (Promise Foreign)
 
 data FSError = ApiError String | JsonError String
+
 derive instance genericFSError :: Generic FSError _
 instance showFSError :: Show FSError where
   show = genericShow
+
+addDocF :: Firestore -> String -> Foreign -> Aff (Either FSError DocumentReference)
+addDocF fs path x = do
+  ei <- try $ toAffE $ (runEffectFn3 addDoc_) fs path (removeUndefineds x)
+  pure $ lmap (ApiError <<< show) ei
 
 addDoc
   :: ∀ a
@@ -87,21 +57,40 @@ addDoc
   -> String
   -> a
   -> Aff (Either FSError DocumentReference)
-addDoc fs path x = do
-  ei <- try $ toAffE $ (runEffectFn3 addDoc_) fs path (removeUndefineds (JSON.writeImpl x))
+addDoc fs path x = addDocF fs path $ JSON.writeImpl x
+
+getDocF :: Firestore -> String -> String -> Aff (Either FSError Foreign)
+getDocF fs path id = do
+  ei <- try $ toAffE $ (runEffectFn3 getDoc_) fs path id
   pure $ lmap (ApiError <<< show) ei
 
 getDoc :: ∀ a. ReadForeign a => Firestore -> String -> String -> Aff (Either FSError a)
-getDoc fs path id = do
-  eiErrorDoc <- try $ toAffE $ (runEffectFn3 getDoc_) fs path id
-  let eiConvertedDoc = lmap (ApiError <<< show) eiErrorDoc
-  pure $ eiConvertedDoc >>= \doc -> lmap (JsonError <<< show) (JSON.read doc)
+getDoc fs path id = parseDocResult <$> getDocF fs path id
+
+getDocsF :: Firestore -> String -> Aff (Either FSError Foreign)
+getDocsF fs path = do
+  eiErrorDocs <- try $ toAffE $ (runEffectFn2 getDocs_) fs path
+  pure $ lmap (ApiError <<< show) eiErrorDocs
 
 getDocs :: ∀ a. ReadForeign a => Firestore -> String -> Aff (Either FSError (Array a))
-getDocs fs path = do
-  eiErrorDocs <- try $ toAffE $ (runEffectFn2 getDocs_) fs path
-  let eiConvertedDocs = lmap (ApiError <<< show) eiErrorDocs
-  pure $ eiConvertedDocs >>= \docs -> lmap (JsonError <<< show) (JSON.read docs)
+getDocs fs path = parseDocResult <$> getDocsF fs path
+
+-- observeDocs
+--   :: ∀ a
+--    . ReadForeign a
+--   => Firestore
+--   -> String
+--   -> String
+--   -> (a -> Effect Unit)
+--   -> Aff (Either FSError (Array a))
+-- observeDocs fs path id cb = do
+--   eiErrorDocs <- try $ toAffE $ (runEffectFn4 observeDoc_) fs path id cb
+--   let eiConvertedDocs = lmap (ApiError <<< show) eiErrorDocs
+--   pure $ eiConvertedDocs >>= \docs -> lmap (JsonError <<< show) (JSON.read docs)
+
+parseDocResult :: ∀ a. ReadForeign a => Either FSError Foreign -> Either FSError  a
+parseDocResult eiErrorDoc =  (lmap (ApiError <<< show) eiErrorDoc)
+    >>= \doc -> lmap (JsonError <<< show) (JSON.read doc)
 
 -- createPlayerIfNotExistsYet :: Firestore -> String -> Aff String
 -- createPlayerIfNotExistsYet fs id = getPlayerAff fs id >>= case _ of

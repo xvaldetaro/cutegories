@@ -1,29 +1,10 @@
-import {collection, getDoc, getDocs, addDoc, doc} from "firebase/firestore"
+import {collection, getDoc, getDocs, addDoc, doc, onSnapshot} from "firebase/firestore"
 
 // Initialize Cloud Firestore and get a reference to the service
 export const firestoreDb = (app) => () =>
 	import("firebase/firestore").then(({ getFirestore }) => {
 		console.log("get firestore");
 		return getFirestore(app);
-	});
-
-const PLAYERS = "players";
-
-export const addPlayer = (db) => (player) => () =>
-	import("firebase/firestore").then(({ collection, addDoc }) => {
-		console.log("addPlayer", player);
-		return addDoc(collection(db, PLAYERS), player);
-	});
-export const getPlayer = (db) => (player) => () =>
-	import("firebase/firestore").then(({ getDoc, doc }) => {
-		console.log("getPlayer", db, PLAYERS, player);
-		return getDoc(doc(db, PLAYERS, player)).then((r) => r.data());
-	});
-export const getPlayers = (db) => () =>
-	import("firebase/firestore").then(({ collection, getDocs }) => {
-		console.log("getPlayers", db, PLAYERS);
-		return getDocs(collection(db, PLAYERS))
-			.then((snapshot) => snapshot.docs.map((d) => d.data()));
 	});
 
 export function addDoc_(db, path, docObj) {
@@ -35,6 +16,7 @@ export function getDoc_(db, path, id) {
 		console.log("getDoc", path, id);
 		return getDoc(doc(db, path, id)).then((r) => {
 			const res = r.data();
+			res.id = r.id
 			console.log("got doc: ", res)
 			return res;
 		});
@@ -42,11 +24,25 @@ export function getDoc_(db, path, id) {
 export function getDocs_(db, path) {
 		return getDocs(collection(db, path))
 			.then((snapshot) => {
-				const res = snapshot.docs.map((d) => d.data())
+				const res = snapshot.docs.map((d) => {
+					const data = d.data();
+					data.id = d.id
+					return data
+				})
 				console.log("got docs: ", res)
 				return res;
 			});
 }
+
+export function observeDoc_(db, path, id, pub) {
+	onSnapshot(doc(db, path, id), (d) => {
+		const toPublish = doc.data();
+		toPublish.id = id
+		console.log('publishing', chan, toPublish);
+		pub(toPublish)();
+	})
+}
+
 // export const claimPlayer = (auth) => (db) => (player) => (player) => () =>
 // 	import("firebase/firestore").then(({ updateDoc, doc }) => {
 // 		const update = {};

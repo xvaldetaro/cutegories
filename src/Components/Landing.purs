@@ -12,7 +12,6 @@ import Dumb.Button as Dumb.Button
 import Dumb.VerticalListClickable as Dumb.VerticalListClickable
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
-import Platform.Firebase.Firestore (getPlayersAff)
 import Platform.Html.CssUtils (css)
 import Halogen (ClassName(..))
 import Halogen as H

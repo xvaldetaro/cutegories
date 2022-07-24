@@ -4,20 +4,21 @@ import Prelude
 
 import App.Capa.Navigate (class Navigate, navigate)
 import App.Route as Route
+import App.Store.MyStore as MS
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Dumb.Button as Dumb.Button
 import Dumb.VerticalListClickable as Dumb.VerticalListClickable
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
-import Platform.Firebase.Firestore (getPlayersAff)
-import Platform.Html.CssUtils (css)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Models.Models (Player(..))
-import App.Store.MyStore as MS
+import Platform.Firebase.Firestore (getDocs)
+import Platform.Html.CssUtils (css)
 
 type State = { players :: Maybe (Array Player) }
 data Action = Initialize | CreatePlayerClick
@@ -30,8 +31,12 @@ component =
 
     Hooks.useLifecycleEffect do
       { fb } <- getStore
-      players' <- H.liftAff $ getPlayersAff fb.db
-      Hooks.modify_ playersId $ const $ Just players'
+      players' <- H.liftAff $ getDocs fb.db "players"
+      case players' of
+        Left e -> do
+          H.liftEffect $ log $ "Error in getDocs: " <> show e
+          pure unit
+        Right p -> Hooks.modify_ playersId $ const $ Just p
       pure Nothing
 
     let handleCreatePlayerClick = navigate Route.CreatePlayer

@@ -7,7 +7,7 @@ import Data.Newtype (class Newtype)
 import Simple.JSON as JSON
 
 type PlayerIn r = { name :: String | r}
-newtype Player = Player (PlayerIn ())
+newtype Player = Player (PlayerIn ( id :: String ))
 newtype PlayerInput = PlayerInput { name :: String }
 
 newtype Room = Room
