@@ -34,13 +34,24 @@ export function getDocs_(db, path) {
 			});
 }
 
-export function observeDoc_(db, path, id, pub) {
-	onSnapshot(doc(db, path, id), (d) => {
-		const toPublish = doc.data();
-		toPublish.id = id
-		console.log('publishing', chan, toPublish);
-		pub(toPublish)();
-	})
+export function observeDoc_(db, path, id, onNext, onError, onCompleteEffect) {
+	return onSnapshot(
+		doc(db, path, id),
+		(d) => {
+			console.log(`onNext doc. path:${path} id:${id} ${d}`);
+			const toPublish = d.data();
+			toPublish.id = id
+			onNext(toPublish)();
+		},
+		(e) => {
+			const errorStr = `Error in observeDoc_. code:${e.code}. msg:${e.message}`
+			console.log(errorStr)
+			onError(errorStr)();
+		},
+		() => {
+			onCompleteEffect()
+		},
+	)
 }
 
 // export const claimPlayer = (auth) => (db) => (player) => (player) => () =>
