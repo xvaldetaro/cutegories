@@ -19,7 +19,7 @@ import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Halogen.Subscription as HS
 import Models.Models (Player(..))
-import Platform.Firebase.Firestore (FSError, addDoc, getDoc, getDocs, observeDoc)
+import Platform.Firebase.Firestore (FSError, addDoc, getDoc, getDocs, observeDoc, setDoc)
 import Platform.Html.CssUtils (css)
 import Platform.Html.Utils (maybeElem)
 import Platform.Misc.Disposable (disposeE, disposeM)
@@ -38,6 +38,10 @@ component = Hooks.component \_ _ -> Hooks.do
   let handleName str = Hooks.put nameId str
   let handleId str = Hooks.put idId str
   let
+    handleEdit _ = do
+      { fb } <- getStore
+      res <- H.liftAff $ setDoc fb.db path id {name}
+      Hooks.put resultId $ show res
     handleClick _ = do
       { fb } <- getStore
       res <- H.liftAff $ addDoc fb.db path {name}
@@ -75,13 +79,14 @@ component = Hooks.component \_ _ -> Hooks.do
         [ Input.input "Doc path:" "path" handlePath
         , HH.div [cardCss']
             [ Input.input "Name:" "name" handleName
-            , HH.div [buttonCss', HE.onClick handleClick] [ HH.text "Save"]
-            , Break.break
             , Input.input "Id:" "name" handleId
+            , Break.break
+            , HH.div [buttonCss', HE.onClick handleClick] [ HH.text "Add Player"]
+            , HH.div [buttonCss', HE.onClick handleEdit] [ HH.text "Edit Player Name"]
             , HH.div [buttonCss', HE.onClick handleLoad] [ HH.text "Load"]
             , HH.div [buttonCss', HE.onClick handleObserve] [ HH.text "Observe"]
-            , HH.div [buttonCss', HE.onClick handleDisposeObserve] [ HH.text "Dispose Observe"]
             , Break.break
+            , HH.div [buttonCss', HE.onClick handleDisposeObserve] [ HH.text "Dispose Observe"]
             , HH.div [buttonCss', HE.onClick handleLoadAll] [ HH.text "Load All"]
             ]
         ]

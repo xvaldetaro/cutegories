@@ -10,7 +10,7 @@ import Data.Profunctor (lcmap)
 import Data.Show.Generic (genericShow)
 import Effect (Effect)
 import Effect.Aff (Aff, try)
-import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn6, runEffectFn2, runEffectFn3, runEffectFn6)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6)
 import Foreign (Foreign)
 import Platform.Firebase.Config (FirebaseApp)
 import Platform.Misc.Disposable (Disposable)
@@ -35,6 +35,7 @@ foreign import removeUndefineds :: Foreign -> Foreign
 
 foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocumentReference)
 foreign import getDoc_ :: EffectFn3 Firestore String String (Promise Foreign)
+foreign import setDoc_ :: EffectFn4 Firestore String String Foreign (Promise Unit)
 foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
 
 -- params: db path id onNext onError onCompleteEffect
@@ -54,6 +55,21 @@ data FSError = ApiError String | JsonError String
 derive instance genericFSError :: Generic FSError _
 instance showFSError :: Show FSError where
   show = genericShow
+
+setDocF :: Firestore -> String -> String -> Foreign -> Aff (Either FSError Unit)
+setDocF fs path id x = do
+  ei <- try $ toAffE $ (runEffectFn4 setDoc_) fs path id (removeUndefineds x)
+  pure $ lmap (ApiError <<< show) ei
+
+setDoc
+  :: ∀ a
+   . WriteForeign a
+  => Firestore
+  -> String
+  -> String
+  -> a
+  -> Aff (Either FSError Unit)
+setDoc fs path id x = setDocF fs path id $ JSON.writeImpl x
 
 addDocF :: Firestore -> String -> Foreign -> Aff (Either FSError DocumentReference)
 addDocF fs path x = do

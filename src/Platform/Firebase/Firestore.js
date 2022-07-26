@@ -1,4 +1,4 @@
-import {collection, getDoc, getDocs, addDoc, doc, onSnapshot} from "firebase/firestore"
+import {collection, getDoc, getDocs, setDoc, addDoc, doc, onSnapshot} from "firebase/firestore"
 
 // Initialize Cloud Firestore and get a reference to the service
 export const firestoreDb = (app) => () =>
@@ -10,6 +10,11 @@ export const firestoreDb = (app) => () =>
 export function addDoc_(db, path, docObj) {
 		console.log("addDoc", docObj);
 		return addDoc(collection(db, path), docObj);
+}
+
+export function setDoc_(db, path, id, docObj) {
+		console.log("setDoc", path, id, docObj);
+		return setDoc(doc(db, path, id), docObj);
 }
 
 export function getDoc_(db, path, id) {
