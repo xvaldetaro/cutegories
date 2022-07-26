@@ -1,4 +1,4 @@
-module Platform.Hyrule.AffHelper where
+module Platform.Rx.AffExt where
 
 import Prelude
 
@@ -7,10 +7,10 @@ import Effect (Effect)
 import Effect.Aff (Aff, joinFiber, killFiber, launchAff, launchAff_, try)
 import Effect.Class (liftEffect)
 import Effect.Exception (error)
-import FRP.Event (Event, makeEvent)
+import Halogen.Subscription (Emitter, makeEmitter)
 
-makeEventAff :: ∀ a . ((a -> Effect Unit) -> Aff (Effect Unit)) -> Event a
-makeEventAff cb = makeEvent \k -> do
+makeEmitterAff :: ∀ a . ((a -> Effect Unit) -> Aff (Effect Unit)) -> Emitter a
+makeEmitterAff cb = makeEmitter \k -> do
   fiber <- launchAff $ cb k
   pure $ launchAff_ do
     killFiber (error "") fiber

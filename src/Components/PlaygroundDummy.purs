@@ -5,7 +5,7 @@ import Prelude
 import App.Capa.Navigate (class Navigate)
 import App.Store.MyStore as MS
 import Components.Dumb.Styles (buttonCss', cardCss')
-import Data.Either (Either(..), hush, isLeft, isRight)
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Dumb.Break as Break
@@ -18,11 +18,11 @@ import Halogen.HTML.Events as HE
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
 import Halogen.Subscription as HS
-import Models.Models (Player(..))
+import Models.Models (Player)
 import Platform.Firebase.Firestore (FSError, addDoc, getDoc, getDocs, observeDoc, setDoc)
 import Platform.Html.CssUtils (css)
 import Platform.Html.Utils (maybeElem)
-import Platform.Misc.Disposable (disposeE, disposeM)
+import Platform.Misc.Disposable (disposeM)
 
 component
   :: ∀ q m. Navigate m => MonadAff m => MonadStore MS.Action MS.Store m => H.Component q Unit Void m
