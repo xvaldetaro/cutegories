@@ -3,7 +3,7 @@ module App.Store.MyStore where
 import Prelude
 
 import Platform.Firebase.Firebase (FirebaseEnv)
-import Models.Player (Player)
+import Models.Models (Player)
 
 type Store = { fb :: FirebaseEnv, players :: Array Player, count :: Int }
 

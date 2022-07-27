@@ -8,8 +8,10 @@ import Platform.Firebase.Config (FirebaseApp, firebaseAppAff)
 import Platform.Firebase.Firestore (Firestore, firestoreDbAff)
 import Platform.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
 
-type FirebaseEnv =
-  { app :: FirebaseApp, analytics :: FirebaseAnalytics, db :: Firestore, auth :: FirebaseAuth }
+type FirebaseEnvR r =
+  { app :: FirebaseApp, analytics :: FirebaseAnalytics, db :: Firestore, auth :: FirebaseAuth | r}
+
+type FirebaseEnv = FirebaseEnvR ()
 
 
 startFirebase :: Aff FirebaseEnv

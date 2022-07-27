@@ -2,36 +2,40 @@ module Components.Router where
 
 import Prelude
 
+import App.Capa.Navigate (class Navigate, navigate)
+import App.Route (Route(..), routeCodec)
+import App.Route as Route
+import App.Store.MyStore as MS
 import Components.CreatePlayer as CreatePlayer
 import Components.Dumb.Icon as Icon
 import Components.Landing as Landing
 import Components.PlayerList as PlayerList
-import App.Capa.Navigate (class Navigate, navigate)
-import Platform.Html.Utils (safeHref)
-import App.Route (Route(..), routeCodec)
-import App.Route as Route
+import Components.PlaygroundDummy as PlaygroundDummy
+import Components.PlaygroundFrp as PlaygroundFrp
 import Data.Const (Const)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Dumb.Nav as Nav
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import Platform.Html.CssUtils (css)
 import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Store.Monad (class MonadStore, updateStore)
 import Halogen.Subscription as HS
+import Platform.Html.CssUtils (css)
+import Platform.Html.Utils (safeHref)
 import Platform.Misc.OpaqueSlot (OpaqueSlot)
 import Routing.Duplex (parse)
 import Routing.Duplex as RD
 import Routing.Hash (getHash, matchesWith)
-import App.Store.MyStore as MS
 import Type.Proxy (Proxy(..))
 
 type ChildSlots =
   ( playerList :: OpaqueSlot Unit
+  , playgroundDummy :: OpaqueSlot Unit
+  , playgroundFrp :: OpaqueSlot Unit
   , createPlayer :: OpaqueSlot Unit
   , landing :: OpaqueSlot Unit
   )
@@ -80,6 +84,8 @@ component =
             Landing -> HH.slot_ (Proxy :: _ "landing") unit Landing.component unit
             PlayerList -> HH.slot_ (Proxy :: _ "playerList") unit PlayerList.component unit
             CreatePlayer -> HH.slot_ (Proxy :: _ "createPlayer") unit CreatePlayer.component unit
+            PlaygroundDummy -> HH.slot_ (Proxy :: _ "playgroundDummy") unit PlaygroundDummy.component unit
+            PlaygroundFrp -> HH.slot_ (Proxy :: _ "playgroundFrp") unit PlaygroundFrp.component unit
         ]
 
   handleAction = case _ of

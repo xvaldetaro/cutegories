@@ -12,7 +12,6 @@ import Dumb.Button as Dumb.Button
 import Dumb.VerticalListClickable as Dumb.VerticalListClickable
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
-import Platform.Firebase.Firestore (getPlayersAff)
 import Platform.Html.CssUtils (css)
 import Halogen (ClassName(..))
 import Halogen as H
@@ -20,7 +19,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
-import Models.Player (Player(..))
+import Models.Models (Player(..))
 import App.Store.MyStore as MS
 
 type State = { players :: Maybe (Array Player) }

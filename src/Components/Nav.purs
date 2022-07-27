@@ -2,15 +2,15 @@ module Dumb.Nav where
 
 import Prelude
 
-import Components.Dumb.Icon as Icon
-import Platform.Html.Utils (safeHref)
 import App.Route (Route)
 import App.Route as Route
+import Components.Dumb.Icon as Icon
 import Data.Maybe (Maybe, fromMaybe)
-import Platform.Html.CssUtils (css, cx)
 import Halogen (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
+import Platform.Html.CssUtils (css, cx)
+import Platform.Html.Utils (safeHref)
 
 nav :: ∀ props act. Maybe Route -> HH.HTML props act
 nav mbRoute =
@@ -23,6 +23,8 @@ nav mbRoute =
     [ menuItem Route.Landing "Home" ""
     , menuItem Route.PlayerList "Games" ""
     , menuItem Route.CreatePlayer "Players" ""
+    , menuItem Route.PlaygroundDummy "Playground" ""
+    , menuItem Route.PlaygroundFrp "Frp" ""
     , Icon.menu [ Icon.classes $ [ ClassName "block md:hidden w-4" ] ]
     ]
     where

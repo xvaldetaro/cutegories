@@ -2,20 +2,19 @@ module Platform.Firebase.Firestore where
 
 import Prelude
 
-import Control.Alt ((<|>))
 import Control.Promise (Promise, toAffE)
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Generic.Rep (class Generic)
 import Data.Profunctor (lcmap)
+import Data.Show.Generic (genericShow)
 import Effect (Effect)
-import Effect.Aff (Aff, error, launchAff_, throwError, try)
-import Effect.Class (liftEffect)
-import Effect.Ref as Ref
-import FRP.Event (Event, makeEvent)
-import Platform.Firebase.Auth (FirebaseAuth)
-import Platform.Firebase.Config (FirebaseApp)
+import Effect.Aff (Aff, try)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6)
 import Foreign (Foreign)
-import Models.Player (Player(..))
+import Platform.Firebase.Config (FirebaseApp)
+import Platform.Misc.Disposable (Disposable)
+import Simple.JSON (class ReadForeign, class WriteForeign)
 import Simple.JSON as JSON
 
 data Firestore
@@ -32,105 +31,104 @@ type DocumentReference =
 
 data DocumentSnapshot
 
-foreign import addPlayer :: Firestore -> Foreign -> Effect (Promise DocumentReference)
 foreign import removeUndefineds :: Foreign -> Foreign
 
-addPlayerAff :: Firestore -> Player -> Aff DocumentReference
-addPlayerAff fs r = toAffE $ addPlayer fs (removeUndefineds (JSON.writeImpl r))
+foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocumentReference)
+foreign import getDoc_ :: EffectFn3 Firestore String String (Promise Foreign)
+foreign import setDoc_ :: EffectFn4 Firestore String String Foreign (Promise Unit)
+foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
 
-foreign import getPlayer :: Firestore -> String -> Effect (Promise Foreign)
-foreign import getPlayers :: Firestore -> Effect (Promise Foreign)
+-- params: db path id onNext onError onCompleteEffect
+-- returns Disposable effect
+foreign import observeDoc_
+  :: EffectFn6
+       Firestore
+       String
+       String
+       (Foreign -> Effect Unit)
+       (String -> Effect Unit)
+       (Effect Unit)
+       Disposable
 
-getPlayerAff :: Firestore -> String -> Aff (Maybe Player)
-getPlayerAff fs id = do
-  ds <- toAffE $ getPlayer fs id
-  case JSON.read ds of
-    Right r -> pure r
-    Left e -> throwError (error (show e))
+data FSError = ApiError String | JsonError String
 
-getPlayersAff :: Firestore -> Aff (Array Player)
-getPlayersAff fs = do
-  ds <- toAffE $ getPlayers fs
-  case JSON.read ds of
-    Right r -> pure r
-    Left e -> throwError (error (show e))
+derive instance genericFSError :: Generic FSError _
+instance showFSError :: Show FSError where
+  show = genericShow
 
--- createPlayerIfNotExistsYet :: Firestore -> String -> Aff String
--- createPlayerIfNotExistsYet fs id = getPlayerAff fs id >>= case _ of
---   Nothing -> _.id <$> addPlayerAff fs defaultPlayer
---   Just _ -> pure id
+setDocF :: Firestore -> String -> String -> Foreign -> Aff (Either FSError Unit)
+setDocF fs path id x = do
+  ei <- try $ toAffE $ (runEffectFn4 setDoc_) fs path id (removeUndefineds x)
+  pure $ lmap (ApiError <<< show) ei
 
--- getLowestAvailablePlayer :: PlayerV0' -> Maybe Player
--- getLowestAvailablePlayer { player1, player2, player3, player4 } = (player4 `go` Player4)
---   <|> (player3 `go` Player3)
---   <|> (player2 `go` Player2)
---   <|> (player1 `go` Player1)
---   where
---   go Nothing = Just
---   go (Just _) = const Nothing
+setDoc
+  :: ∀ a
+   . WriteForeign a
+  => Firestore
+  -> String
+  -> String
+  -> a
+  -> Aff (Either FSError Unit)
+setDoc fs path id x = setDocF fs path id $ JSON.writeImpl x
 
--- foreign import claimPlayer :: FirebaseAuth -> Firestore -> String -> String -> Effect (Promise Unit)
+addDocF :: Firestore -> String -> Foreign -> Aff (Either FSError DocumentReference)
+addDocF fs path x = do
+  ei <- try $ toAffE $ (runEffectFn3 addDoc_) fs path (removeUndefineds x)
+  pure $ lmap (ApiError <<< show) ei
 
--- claimPlayerAff :: FirebaseAuth -> Firestore -> String -> Player -> Aff Unit
--- claimPlayerAff auth firestore myChannel p = toAffE
---   $ claimPlayer auth firestore myChannel
---   $ case p of
---       Player1 -> "player1"
---       Player2 -> "player2"
---       Player3 -> "player3"
---       Player4 -> "player4"
+addDoc
+  :: ∀ a
+   . WriteForeign a
+  => Firestore
+  -> String
+  -> a
+  -> Aff (Either FSError DocumentReference)
+addDoc fs path x = addDocF fs path $ JSON.writeImpl x
 
--- foreign import listenToRemoteChannelChanges :: Firestore -> String -> (Foreign -> Effect Unit) -> Effect (Promise (Effect Unit))
+getDocF :: Firestore -> String -> String -> Aff (Either FSError Foreign)
+getDocF fs path id = do
+  ei <- try $ toAffE $ (runEffectFn3 getDoc_) fs path id
+  pure $ lmap (ApiError <<< show) ei
 
--- eventChannelChanges :: Firestore -> String -> Event Player
--- eventChannelChanges fs s = makeEvent \k -> do
---   u <- Ref.new (pure unit)
---   launchAff_ do
---     unsub <- toAffE $ listenToRemoteChannelChanges fs s (\f -> case JSON.read f of
---       Left e -> throwError (error (show e))
---       Right r -> k r)
---     liftEffect $ Ref.write unsub u
---   pure $ join $ Ref.read u
+getDoc :: ∀ a. ReadForeign a => Firestore -> String -> String -> Aff (Either FSError a)
+getDoc fs path id = parseDocResult <$> getDocF fs path id
 
--- getPlayerForChannel :: FirebaseAuth -> Firestore -> String -> Maybe Player -> Aff (Maybe Player)
--- getPlayerForChannel = go 0
---   where
---   go n auth fs myChannel myPlayerHint = do
---     when (n >= 4) $ throwError (error "No player found")
---     player <- getPlayerAff fs myChannel
---     case player of
---       Nothing -> throwError (error "PROGRAMMING ERROR: Player has not been created yet, verify control flow!")
---       Just (PlayerV0 dt) -> do
---         let lowestPlayerForChannel = (myPlayerHint <|> getLowestAvailablePlayer dt)
---         case lowestPlayerForChannel of
---           -- we failed to find a player, which means that the game is full
---           Nothing -> pure Nothing
---           Just p -> do
---             -- we try to claim a player
---             -- usually this will succeed, but it will fail if two
---             -- are reaching for the same player concurrently
---             maybeClaim <- try (claimPlayerAff auth fs myChannel p)
---             case maybeClaim of
---               Right _ -> pure (Just p)
---               -- was claimed, try again
---               Left _ -> go (n + 1) auth fs myChannel myPlayerHint
+getDocsF :: Firestore -> String -> Aff (Either FSError Foreign)
+getDocsF fs path = do
+  eiErrorDocs <- try $ toAffE $ (runEffectFn2 getDocs_) fs path
+  pure $ lmap (ApiError <<< show) eiErrorDocs
 
--- foreign import sendMyPointsAndPenaltiesToFirebaseImpl :: Firestore -> FirebaseAuth -> String -> String -> String -> Number -> Number -> Effect (Promise Unit)
+getDocs :: ∀ a. ReadForeign a => Firestore -> String -> Aff (Either FSError (Array a))
+getDocs fs path = parseDocResult <$> getDocsF fs path
 
--- sendMyPointsAndPenaltiesToFirebase :: Firestore -> FirebaseAuth -> String -> Player -> Points -> Penalty -> Aff Unit
--- sendMyPointsAndPenaltiesToFirebase fdb auth myChannel myPlayer (Points points) (Penalty penalties) = do
---   toAffE $ sendMyPointsAndPenaltiesToFirebaseImpl fdb auth myChannel
---     ( case myPlayer of
---         Player1 -> "player1Points"
---         Player2 -> "player2Points"
---         Player3 -> "player3Points"
---         Player4 -> "player4Points"
---     )
---     ( case myPlayer of
---         Player1 -> "player1Penalties"
---         Player2 -> "player2Penalties"
---         Player3 -> "player3Penalties"
---         Player4 -> "player4Penalties"
---     )
---     points
---     penalties
+observeDocF
+  :: Firestore
+  -> String
+  -> String
+  -> (Foreign -> Effect Unit)
+  -> (String -> Effect Unit)
+  -> Effect Unit
+  -> Effect Disposable
+observeDocF fs path id onNext onError onComplete =
+  (runEffectFn6 observeDoc_) fs path id onNext onError onComplete
+
+observeDoc
+  :: ∀ a
+  . ReadForeign a
+  => Firestore
+  -> String
+  -> String
+  -> (Either FSError a -> Effect Unit)
+  -> Effect Unit
+  -> Effect Disposable
+observeDoc fs path id onNext onComplete = observeDocF fs path id onNext' onError onComplete
+  where
+    onNext' = lcmap parseDocResult' onNext
+    onError = lcmap (Left <<< ApiError) onNext
+
+parseDocResult' :: ∀ a. ReadForeign a => Foreign -> Either FSError a
+parseDocResult' doc = lmap (JsonError <<< show) (JSON.read doc)
+
+parseDocResult :: ∀ a. ReadForeign a => Either FSError Foreign -> Either FSError a
+parseDocResult eiErrorDoc = (lmap (ApiError <<< show) eiErrorDoc)
+  >>= \doc -> lmap (JsonError <<< show) (JSON.read doc)
