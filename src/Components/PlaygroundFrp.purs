@@ -7,13 +7,11 @@ import App.Store.MyStore as MS
 import Components.Dumb.Styles (buttonCss', cardCss, cardCss')
 import Data.Array (snoc)
 import Data.Either (Either(..))
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Dumb.Break as Break
 import Dumb.Input as Input
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (Event)
 import Halogen (SubscriptionId)
@@ -23,14 +21,11 @@ import Halogen.HTML.Events as HE
 import Halogen.Hooks (unsubscribe)
 import Halogen.Hooks as Hooks
 import Halogen.Store.Monad (class MonadStore, getStore)
-import Halogen.Subscription as HS
 import HyruleRx as Rx
 import Models.Models (Player)
-import Platform.Firebase.Firestore (FSError, addDoc, getDoc, getDocs, observeDoc, setDoc)
+import Platform.Firebase.Firestore (FSError)
 import Platform.Firebase.Firestore as FSError
 import Platform.Html.CssUtils (css)
-import Platform.Html.Utils (maybeElem)
-import Platform.Misc.Disposable (disposeM)
 import Platform.Rx.FirebaseExt (docEvent)
 
 component

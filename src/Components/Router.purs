@@ -12,6 +12,7 @@ import Components.Landing as Landing
 import Components.PlayerList as PlayerList
 import Components.PlaygroundDummy as PlaygroundDummy
 import Components.PlaygroundFrp as PlaygroundFrp
+import Components.Room as Room
 import Data.Const (Const)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -34,6 +35,8 @@ import Type.Proxy (Proxy(..))
 
 type ChildSlots =
   ( playerList :: OpaqueSlot Unit
+  , room :: OpaqueSlot Unit
+  -- Debug play slots
   , playgroundDummy :: OpaqueSlot Unit
   , playgroundFrp :: OpaqueSlot Unit
   , createPlayer :: OpaqueSlot Unit
@@ -82,6 +85,8 @@ component =
       Just route' -> HH.div [ css "container mx-auto"]
         [ case route' of
             Landing -> HH.slot_ (Proxy :: _ "landing") unit Landing.component unit
+            Room roomId -> HH.slot_ (Proxy :: _ "room") unit Room.component roomId
+            -- Debug Learning Routes
             PlayerList -> HH.slot_ (Proxy :: _ "playerList") unit PlayerList.component unit
             CreatePlayer -> HH.slot_ (Proxy :: _ "createPlayer") unit CreatePlayer.component unit
             PlaygroundDummy -> HH.slot_ (Proxy :: _ "playgroundDummy") unit PlaygroundDummy.component unit

@@ -4,12 +4,14 @@ import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Routing.Duplex (RouteDuplex', root)
+import Routing.Duplex (RouteDuplex', root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
 
 data Route
   = Landing
+  | Room String
+  -- Debug Learning Routes
   | PlaygroundDummy
   | PlaygroundFrp
   | PlayerList
@@ -24,6 +26,8 @@ instance showRoute :: Show Route where
 routeCodec :: RouteDuplex' Route
 routeCodec = root $ sum
   { "Landing": noArgs
+  , "Room": "roomId" / segment
+  -- Debug Learning Routes
   , "PlaygroundDummy": "playgrounddummy" / noArgs
   , "PlaygroundFrp": "playgroundfrp" / noArgs
   , "PlayerList": "playerlist" / noArgs
