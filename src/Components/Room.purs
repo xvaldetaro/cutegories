@@ -27,6 +27,7 @@ type Input = String
 component
   :: ∀ q m. Navigate m => MonadAff m => MonadStore MS.Action MS.Store m => H.Component q Input Void m
 component = Hooks.component \_ roomId -> Hooks.do
+
   Hooks.pure do
     HH.div
       [ cardCss "flex-col flex w-96 items-center px-8" ]
