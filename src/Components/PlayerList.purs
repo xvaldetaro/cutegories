@@ -4,7 +4,7 @@ import Prelude
 
 import App.Capa.Navigate (class Navigate, navigate)
 import App.Route as Route
-import App.Store.MyStore as MS
+import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
@@ -15,22 +15,23 @@ import Effect.Class.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Hooks as Hooks
-import Halogen.Store.Monad (class MonadStore, getStore)
 import Models.Models (Player(..))
+import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore (getDocs)
 import Platform.Html.CssUtils (css)
 
-type State = { players :: Maybe (Array Player) }
-data Action = Initialize | CreatePlayerClick
-
 component
-  :: ∀ q m. Navigate m => MonadAff m => MonadStore MS.Action MS.Store m => H.Component q Unit Void m
+  :: ∀ q m r
+   . Navigate m
+  => MonadAff m
+  => MonadAsk { fb :: FirebaseEnv | r } m
+  => H.Component q Unit Void m
 component =
   Hooks.component \_ _ -> Hooks.do
     players /\ playersId <- Hooks.useState Nothing
 
     Hooks.useLifecycleEffect do
-      { fb } <- getStore
+      { fb } <- ask
       players' <- H.liftAff $ getDocs fb.db "players"
       case players' of
         Left e -> do
@@ -53,4 +54,4 @@ component =
             , Dumb.VerticalListClickable.verticalListClickable playerItems handlePlayerClick
             ]
           where
-          playerItems = (\(Player p) -> {text: p.name}) <$> players'
+          playerItems = (\(Player p) -> { text: p.name }) <$> players'

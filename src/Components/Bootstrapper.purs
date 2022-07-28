@@ -2,14 +2,13 @@ module Components.Bootstrapper where
 
 import Prelude
 
-import Components.Router as Router
 import App.AppM (runAppM)
+import Components.Router as Router
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
-import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 import Halogen as H
 import Halogen.HTML as HH
-import App.Store.MyStore as MS
+import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 import Type.Proxy (Proxy(..))
 
 type Slots = (router :: H.Slot Router.Query Void Unit)
@@ -37,8 +36,7 @@ component =
   handleAction = case _ of
     Initialize -> void $ H.fork do
       fb <- H.liftAff startFirebase
-      let store = MS.initialStore fb
-      routerComponent <- H.liftAff $ runAppM store Router.component
+      let routerComponent = H.hoist (runAppM {fb}) Router.component
       H.put $ Just {fb, routerComponent}
 
   render = case _ of

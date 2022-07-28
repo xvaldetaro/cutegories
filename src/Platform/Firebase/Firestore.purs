@@ -50,7 +50,7 @@ foreign import observeDoc_
        (Effect Unit)
        Disposable
 
-data FSError = ApiError String | JsonError String
+data FSError = ApiError String | JsonError String | FSLoading
 
 derive instance genericFSError :: Generic FSError _
 instance showFSError :: Show FSError where

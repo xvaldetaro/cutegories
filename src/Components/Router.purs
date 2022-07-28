@@ -3,30 +3,28 @@ module Components.Router where
 import Prelude
 
 import App.Capa.Navigate (class Navigate, navigate)
+import App.Env (Env)
 import App.Route (Route(..), routeCodec)
-import App.Route as Route
-import App.Store.MyStore as MS
 import Components.CreatePlayer as CreatePlayer
-import Components.Dumb.Icon as Icon
 import Components.Landing as Landing
 import Components.PlayerList as PlayerList
 import Components.PlaygroundDummy as PlaygroundDummy
 import Components.PlaygroundFrp as PlaygroundFrp
 import Components.Room as Room
+import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Dumb.Nav as Nav
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Halogen.Store.Monad (class MonadStore, updateStore)
 import Halogen.Subscription as HS
 import Platform.Html.CssUtils (css)
-import Platform.Html.Utils (safeHref)
 import Platform.Misc.OpaqueSlot (OpaqueSlot)
 import Routing.Duplex (parse)
 import Routing.Duplex as RD
@@ -55,9 +53,10 @@ data Action = Initialize | OnRouteChanged Route | Finalize
 
 component
   :: ∀ q m
-   . MonadAff m
-  => Navigate m
-  => MonadStore MS.Action MS.Store m
+  . Navigate m
+  => MonadAff m
+  => MonadEffect m
+  => MonadAsk Env m
   => H.Component q Unit Void m
 component =
   H.mkComponent
@@ -95,7 +94,6 @@ component =
 
   handleAction = case _ of
     Initialize -> do
-      updateStore MS.Incr
       { emitter, listener } <- H.liftEffect HS.create
       void $ H.subscribe emitter
 

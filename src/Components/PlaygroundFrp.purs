@@ -3,8 +3,8 @@ module Components.PlaygroundFrp where
 import Prelude
 
 import App.Capa.Navigate (class Navigate)
-import App.Store.MyStore as MS
 import Components.Dumb.Styles (buttonCss', cardCss, cardCss')
+import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Array (snoc)
 import Data.Either (Either(..))
 import Data.Foldable (for_)
@@ -20,16 +20,16 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.Hooks (unsubscribe)
 import Halogen.Hooks as Hooks
-import Halogen.Store.Monad (class MonadStore, getStore)
 import HyruleRx as Rx
 import Models.Models (Player)
+import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore (FSError)
 import Platform.Firebase.Firestore as FSError
 import Platform.Html.CssUtils (css)
 import Platform.Rx.FirebaseExt (docEvent)
 
 component
-  :: ∀ q m. Navigate m => MonadAff m => MonadStore MS.Action MS.Store m => H.Component q Unit Void m
+  :: ∀ q m r. Navigate m => MonadAff m => MonadAsk { fb :: FirebaseEnv | r } m => H.Component q Unit Void m
 component = Hooks.component \_ _ -> Hooks.do
   id /\ idId <- Hooks.useState ""
   eiCurrDoc /\ currDocId <- Hooks.useState $ Left $ FSError.ApiError ""
@@ -39,7 +39,7 @@ component = Hooks.component \_ _ -> Hooks.do
   let handleId str = Hooks.put idId str
   let
     handleObserve _ = do
-      { fb } <- getStore
+      { fb } <- ask
       let (event :: Event (Either FSError Player)) = docEvent fb.db "players" id
       (subId :: SubscriptionId ) <- Hooks.subscribe $ Rx.toHalo $ Hooks.put currDocId <$> event
       H.liftEffect $ Ref.write (Just subId) docEventSubRef

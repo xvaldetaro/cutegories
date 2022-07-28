@@ -28,6 +28,7 @@ derive newtype instance showPlayer :: Show Player
 derive newtype instance readForeignPlayer :: JSON.ReadForeign Player
 derive newtype instance writeForeignPlayer :: JSON.WriteForeign Player
 derive newtype instance eqPlayer :: Eq Player
+derive newtype instance showRoom :: Show Room
 
 derive instance newtypeRoom :: Newtype Room _
 derive newtype instance readForeignRoom :: JSON.ReadForeign Room

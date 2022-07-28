@@ -4,7 +4,7 @@ import Prelude
 
 import App.Capa.Navigate (class Navigate, navigate)
 import App.Route (Route(..))
-import App.Store.MyStore as MS
+import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Tuple.Nested ((/\))
 import Dumb.Button as Dumb
 import Effect.Aff.Class (class MonadAff)
@@ -15,14 +15,14 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Hooks (HookM)
 import Halogen.Hooks as Hooks
-import Halogen.Store.Monad (class MonadStore, getStore)
 import Models.Models (Player(..))
+import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore (addDoc)
 import Platform.Html.CssUtils (css)
 
 component
-  :: ∀ q m
-   . MonadStore MS.Action MS.Store m
+  :: ∀ q m r
+  . MonadAsk { fb :: FirebaseEnv | r } m
   => Navigate m
   => MonadEffect m
   => MonadAff m
@@ -34,7 +34,7 @@ component = Hooks.component \_ _ -> Hooks.do
     handleNameChange str = Hooks.modify_ nameId (const str)
     handleClick :: HookM m Unit
     handleClick = do
-      {fb} <- getStore
+      {fb} <- ask
       void $ H.liftAff $ addDoc fb.db "players" (Player {name, id: "asdf"})
       navigate PlayerList
 

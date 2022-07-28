@@ -2,10 +2,22 @@ module Core.Room.RoomManager where
 
 import Prelude
 
-import App.Store.MyStore as MS
-import Control.Monad.Reader (class MonadAsk)
-import Halogen.Store.Monad (class MonadStore)
-import Models.Models (Room(..))
+import Control.Monad.Reader (class MonadAsk, ask)
+import Data.Either (Either)
+import FRP.Event (Event)
+import Models.Models (Room)
+import Platform.Firebase.Firebase (FirebaseEnv)
+import Platform.Firebase.Firestore (FSError)
+import Platform.Rx.FirebaseExt (docEvent)
 
--- observeRoom :: MonadStore MS.Action MS.Store m -> String -> Event (Either FSError Room)
--- roomDocEvent fs id = docEvent fs
+roomPath :: String
+roomPath = "rooms"
+
+observeRoom
+  :: ∀ m r
+   . MonadAsk { fb :: FirebaseEnv | r } m
+  => String
+  -> m (Event (Either FSError Room))
+observeRoom id = do
+  { fb } <- ask
+  pure $ docEvent fb.db roomPath id

@@ -1,4 +1,4 @@
-module Platform.Rx.HooksExt where
+module Platform.Rx.HooksExt (eventToState, useFrpEvent, useFrpEvent', UseFrpEvent) where
 
 import Prelude
 
@@ -9,7 +9,7 @@ import Effect.Class (class MonadEffect)
 import Effect.Ref as Ref
 import FRP.Event (Event)
 import Halogen as H
-import Halogen.Hooks (class HookNewtype, type (<>), Hook, UseEffect, UseRef, UseState)
+import Halogen.Hooks (class HookNewtype, type (<>), Hook, HookM, StateId, UseEffect, UseRef, UseState)
 import Halogen.Hooks as Hooks
 import Halogen.Query.HalogenM (SubscriptionId)
 import HyruleRx as Rx
@@ -38,3 +38,6 @@ useFrpEvent initialState event = Hooks.wrap hook
 
 useFrpEvent' :: ∀ m a. MonadEffect m => a -> Event a -> Hook m (UseFrpEvent a) a
 useFrpEvent' a e = fst <$> useFrpEvent a e
+
+eventToState :: ∀ m state. StateId state -> Event state -> HookM m H.SubscriptionId
+eventToState sId event = Hooks.subscribe $ Rx.toHalo $ Hooks.put sId <$> event
