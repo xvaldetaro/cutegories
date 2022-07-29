@@ -6,8 +6,6 @@ import App.Capa.Navigate (class Navigate, navigate)
 import App.Env (Env)
 import App.Route (Route(..), routeCodec)
 import App.Route as Route
-import Bolson.Control (switcher)
-import Bolson.Core (bussed)
 import Components.CreatePlayer as CreatePlayer
 import Components.Landing as Landing
 import Components.PlayerList as PlayerList
@@ -23,14 +21,14 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Profunctor (lcmap)
 import Deku.Attribute (cb, (:=))
 import Deku.Control (text, text_)
-import Deku.Core (class Korok, Nut, Domable)
+import Deku.Core (class Korok, Domable, Nut, bussed)
 import Deku.DOM as D
 import Deku.Listeners (click)
 import Dumb.Nav as Nav
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
-import FRP.Event (bang, bus, makeEvent)
+import FRP.Event (bang, bus, fromEvent, makeEvent)
 import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
@@ -43,23 +41,17 @@ import Routing.Duplex as RD
 import Routing.Hash (getHash, matchesWith, setHash)
 import Type.Proxy (Proxy(..))
 
-topLevel :: ∀ s l p. Korok s Effect => { param :: String } -> Domable Effect l p
-topLevel { param } = bussed \push -> lcmap (bang "initial" <|> _) \event ->
+topLevel :: { param :: String } -> Nut
+topLevel { param } = bussed \push -> lcmap (bang Route.Landing <|> _) \event ->
   let
-    routeEv = makeEvent \k ->
+    routeEv = fromEvent $ makeEvent \k ->
       matchesWith (parse routeCodec) \old new ->
         when (old /= Just new) $ k new
 
     navigate = setHash <<< print Route.routeCodec
   in
     D.div (bang $ D.Class := "flex flex-col")
-      [ D.div
-          ( oneOf
-              [ bang $ D.Class := "text-red-700"
-              , bang $ D.OnClick := cb (const $ push "clicked")
-              ]
-          )
-          [ text (show <$> routeEv) ]
+      [ D.div ( bang $ D.Class := "text-red-700") [ text (show <$> routeEv) ]
       , D.div (bang $ D.Class := "flex flex-row gap-4")
         [ D.div (bang $ D.OnClick := cb (const $ navigate Route.CreatePlayer)) [text_ "CreateP"]
         , D.div (bang $ D.OnClick := cb (const $ navigate Route.Landing)) [text_ "Landing"]
