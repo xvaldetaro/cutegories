@@ -8,6 +8,7 @@ import App.Route (Route)
 import App.Route as Route
 import Bolson.Core (Entity)
 import Control.Alt ((<|>))
+import Data.Tuple.Nested ((/\))
 import Deku.Attribute (Attribute, (:=))
 import Deku.Control (switcher, text_)
 import Deku.Core (Nut)
@@ -16,13 +17,12 @@ import FRP.Event (AnEvent, bang, filterMap, fromEvent)
 import Nuts.Landing (nut) as Landing
 import Paraglider.Rx (replayRefCount, toClosure)
 import Platform.Deku.Html (bangClick, bangCss, bangCss', css, fragCss)
-import Platform.Deku.Misc (nutFromEffect)
+import Platform.Deku.Misc (nutFromEffect, usingEffect)
 import Platform.Html.Utils (safeHref)
 
 nut :: ∀ s m l p. AppNut_ s m l p
-nut = pure $ nutFromEffect do
-  currentRouteEv <- replayRefCount <<< fromEvent $ routeChangeEvent
-  pure $ closureWithRouteEv currentRouteEv
+nut = pure $ usingEffect (replayRefCount <<< fromEvent $ routeChangeEvent) \currentRouteEv ->
+  closureWithRouteEv currentRouteEv
 
   --  pure $ text_ ""
   -- pure $(toClosure <<< replayRefCount <<< fromEvent $ routeChangeEvent) closureWithRouteEv
