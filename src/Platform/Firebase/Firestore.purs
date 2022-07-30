@@ -13,7 +13,6 @@ import Effect.Aff (Aff, try)
 import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6)
 import Foreign (Foreign)
 import Platform.Firebase.Config (FirebaseApp)
-import Platform.Misc.Disposable (Disposable)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 import Simple.JSON as JSON
 
@@ -48,7 +47,7 @@ foreign import observeDoc_
        (Foreign -> Effect Unit)
        (String -> Effect Unit)
        (Effect Unit)
-       Disposable
+       (Effect Unit)
 
 data FSError = ApiError String | JsonError String | FSLoading
 
@@ -108,7 +107,7 @@ observeDocF
   -> (Foreign -> Effect Unit)
   -> (String -> Effect Unit)
   -> Effect Unit
-  -> Effect Disposable
+  -> Effect (Effect Unit)
 observeDocF fs path id onNext onError onComplete =
   (runEffectFn6 observeDoc_) fs path id onNext onError onComplete
 
@@ -120,7 +119,7 @@ observeDoc
   -> String
   -> (Either FSError a -> Effect Unit)
   -> Effect Unit
-  -> Effect Disposable
+  -> Effect (Effect Unit)
 observeDoc fs path id onNext onComplete = observeDocF fs path id onNext' onError onComplete
   where
     onNext' = lcmap parseDocResult' onNext

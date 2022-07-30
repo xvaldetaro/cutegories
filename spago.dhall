@@ -36,6 +36,7 @@ to generate this file without the comments in this block.
   , "hyrule-paraglider"
   , "lists"
   , "maybe"
+  , "monoid-extras"
   , "newtype"
   , "prelude"
   , "profunctor"

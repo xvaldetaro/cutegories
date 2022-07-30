@@ -8,7 +8,7 @@ import FRP.Event (Event)
 import Models.Models (Room)
 import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore (FSError)
-import Platform.Rx.FirebaseExt (docEvent)
+import Platform.FRP.FirebaseFRP (docEvent)
 
 roomPath :: String
 roomPath = "rooms"
