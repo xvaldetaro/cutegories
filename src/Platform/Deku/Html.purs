@@ -27,7 +27,7 @@ bangCss' s = bang $ css' s
 -- Used to prefix a CSS string with "Css" so that Tailwind's VSCode extension can detect it and
 -- launch intellisense
 fragCss :: String -> String
-fragCss = identity
+fragCss s = " " <> s <> " "
 
 bangClick :: ∀ e m. Applicative m => Effect Unit -> AnEvent m (Attribute e)
 bangClick effect = bang $ D.OnClick := cb (const effect)

@@ -45,6 +45,7 @@ to generate this file without the comments in this block.
   , "routing-duplex"
   , "safe-coerce"
   , "simple-json"
+  , "st"
   , "string-parsers"
   , "strings"
   , "tailrec"

@@ -2,30 +2,25 @@ module Nuts.TopLevel where
 
 import Prelude
 
-import App.Env (AppNut, AppNut_, Nut_)
-import App.Navigation (navigate, routeChangeEvent)
+import App.Env (AppNut_, Nut_)
+import App.Navigation (routeChangeEvent)
 import App.Route (Route)
 import App.Route as Route
 import Bolson.Core (Entity)
 import Control.Alt ((<|>))
-import Data.Tuple.Nested ((/\))
-import Deku.Attribute (Attribute, (:=))
+import Deku.Attribute ((:=))
 import Deku.Control (switcher, text_)
-import Deku.Core (Nut)
 import Deku.DOM as D
-import FRP.Event (AnEvent, bang, filterMap, fromEvent)
+import FRP.Event (AnEvent, bang)
 import Nuts.Landing (nut) as Landing
-import Paraglider.Rx (replayRefCount, toClosure)
-import Platform.Deku.Html (bangClick, bangCss, bangCss', css, fragCss)
-import Platform.Deku.Misc (nutFromEffect, usingEffect)
+import Paraglider.Rx (replayRefCount)
+import Platform.Deku.Html (bangCss, bangCss', css, fragCss)
+import Platform.Deku.Misc (usingEffect)
 import Platform.Html.Utils (safeHref)
 
 nut :: ∀ s m l p. AppNut_ s m l p
-nut = pure $ usingEffect (replayRefCount <<< fromEvent $ routeChangeEvent) \currentRouteEv ->
+nut = pure $ usingEffect (replayRefCount routeChangeEvent) \currentRouteEv ->
   closureWithRouteEv currentRouteEv
-
-  --  pure $ text_ ""
-  -- pure $(toClosure <<< replayRefCount <<< fromEvent $ routeChangeEvent) closureWithRouteEv
 
   where
   closureWithRouteEv :: AnEvent m Route -> Nut_ s m l p
