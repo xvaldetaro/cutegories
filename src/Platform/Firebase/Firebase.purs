@@ -31,7 +31,7 @@ startFirebase chat = liftEffect $ do
   -- db <- firestoreDbAff app
   -- auth <- firebaseAuthAff app
   -- pure { app, analytics, db, auth }
-  let myId = "fakePlayer1"
+  let myId = "mockPlayer1"
   {push, event: event'} <- create
   {event} <- burning chat event'
   log "startFirebase"

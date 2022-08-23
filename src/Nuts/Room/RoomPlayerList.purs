@@ -5,19 +5,20 @@ import Prelude
 import App.Env (Nut_, Env)
 import Control.Alt ((<|>))
 import Data.Array as Array
-import Data.Foldable (fold, oneOfMap)
+import Data.Foldable (oneOfMap)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Tuple (Tuple(..))
-import Deku.Control (dyn, text, text_)
+import Deku.Control (dyn, text_)
 import Deku.Core (insert_, remove)
 import Deku.DOM as D
 import FRP.Event (AnEvent, filterMap, mapAccum)
-import Models.Models (Player(..), PlayerId, Room(..))
+import Models.Models (Player(..), Room(..))
+import Nuts.Dumb.Btn as Btn
 import Paraglider.Operator.SwitchMap (switchMap)
-import Platform.Deku.Html (bangCss)
+import Platform.Deku.Html (bangCss, combineCss, css)
 
 nut :: ∀ s m l p. Env m -> AnEvent m Room -> AnEvent m (Array Player) -> Nut_ s m l p
 nut {fb: {myId}} roomEv playersEv =
@@ -47,4 +48,17 @@ nut {fb: {myId}} roomEv playersEv =
       , i: show $ Array.fromFoldable $ Map.values incomingMap
       }
 
-  rowUi (Player {id, name}) = D.li (bangCss "px-3 py-2 font-semibold") [text_ name]
+  rowUi (Player {id, name}) =
+    let hiddenCss (Room {admin}) = if (admin /= myId) || (id == myId) then css "hidden" else "" in
+    D.li (bangCss "px-3 py-2 font-semibold flex justify-between")
+      [ D.div_ [text_ $ name]
+      , D.button
+        ( -- ( click $ pure (log $ "Removing " <> id) )
+           (combineCss
+                [ pure $ Btn.css
+                    <> css "hover:bg-red-600 bg-red-800 text-slate-100 rounded-full px-2"
+                , hiddenCss <$> roomEv
+                ]
+              )
+        ) [text_ "-"]
+      ]
