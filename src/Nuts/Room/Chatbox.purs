@@ -17,9 +17,10 @@ import Deku.Do as Doku
 import Deku.Listeners (click, textInput)
 import FRP.Event (AnEvent, filterMap, withLast)
 import Models.Models (Chat, ChatMessage(..))
+import Nuts.Dumb.Btn as Btn
 import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.SwitchMap (switchMap)
-import Platform.Deku.Html (bangCss, enterUp)
+import Platform.Deku.Html (bangCss, css, enterUp)
 import Platform.Deku.Misc (shareWild, wildSwitcher)
 import Platform.FRP.Wild (WildEvent, unliftDone)
 import Platform.Firebase.Firestore (FSError)
@@ -42,7 +43,8 @@ happy {fb} chatEv = Doku.do
       rowsEv = switchMap (oneOfMap mkMessageRow) newMessagesEv
 
   D.div (bangCss "flex flex-col h-full")
-    [ dyn D.div (bangCss "bg-slate-50 grow") rowsEv
+    [ D.div (bangCss "text-xl text-center font-bold") [text_ "Chat"]
+    , dyn D.div (bangCss "bg-slate-50 grow") rowsEv
     , typeBox
     ]
 
@@ -60,10 +62,7 @@ happy {fb} chatEv = Doku.do
                 <|> ((\_ -> D.Value := "") <$> clearEv)
           )
           []
-      , D.button
-        ( (click $ pushMessageTextEv)
-            <|> bangCss "hover:bg-teal-300 bg-teal-200 shadow-sm w-20 rounded-md"
-        ) [text_ "Send"]
+      , Btn.nut "Send" (css "px-8") pushMessageTextEv
       ]
 
   mkMessageRow (ChatMessage {timestamp, playerId, text}) =
