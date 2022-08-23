@@ -2,22 +2,37 @@ module Platform.Firebase.Firebase where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Aff (Aff)
-import Platform.Firebase.Auth (FirebaseAuth, firebaseAuthAff)
-import Platform.Firebase.Config (FirebaseApp, firebaseAppAff)
-import Platform.Firebase.Firestore (Firestore, firestoreDbAff)
-import Platform.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
+import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
+import FRP.Event (Event, burning, create, subscribe)
+import Models.Models (Chat)
+import Paraglider.Operator.Replay (replayRefCount)
 
-type FirebaseEnvR r =
-  { app :: FirebaseApp, analytics :: FirebaseAnalytics, db :: Firestore, auth :: FirebaseAuth | r}
+type FirebaseEnvR a r =
+  {
+  --   app :: FirebaseApp
+  -- , analytics :: FirebaseAnalytics
+  -- , db :: Firestore
+  -- , auth :: FirebaseAuth
+  -- Mock stuff
+   myId :: String
+  , bus :: {push :: a -> Effect Unit, event :: Event a }
+  | r
+  }
 
-type FirebaseEnv = FirebaseEnvR ()
+type FirebaseEnv = FirebaseEnvR Chat ()
 
-
-startFirebase :: Aff FirebaseEnv
-startFirebase = do
-  app <- firebaseAppAff
-  analytics <- firebaseAnalyticsAff app
-  db <- firestoreDbAff app
-  auth <- firebaseAuthAff app
-  pure { app, analytics, db, auth }
+startFirebase :: Chat -> Aff FirebaseEnv
+startFirebase chat = liftEffect $ do
+  -- app <- firebaseAppAff
+  -- analytics <- firebaseAnalyticsAff app
+  -- db <- firestoreDbAff app
+  -- auth <- firebaseAuthAff app
+  -- pure { app, analytics, db, auth }
+  let myId = "fakePlayer1"
+  {push, event: event'} <- create
+  {event} <- burning chat event'
+  log "startFirebase"
+  pure { myId, bus: {push, event} }

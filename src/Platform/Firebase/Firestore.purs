@@ -10,10 +10,9 @@ import Data.Profunctor (lcmap)
 import Data.Show.Generic (genericShow)
 import Effect (Effect)
 import Effect.Aff (Aff, try)
-import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6, runEffectFn7)
 import Foreign (Foreign)
 import Platform.Firebase.Config (FirebaseApp)
-import Platform.Misc.Disposable (Disposable)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 import Simple.JSON as JSON
 
@@ -41,16 +40,17 @@ foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
 -- params: db path id onNext onError onCompleteEffect
 -- returns Disposable effect
 foreign import observeDoc_
-  :: EffectFn6
+  :: EffectFn7
        Firestore
        String
        String
-       (Foreign -> Effect Unit)
-       (String -> Effect Unit)
+       (Foreign -> Effect Unit) -- onNext
+       (String -> Effect Unit) -- onError
+       (Effect Unit) -- onEmpty
+       (Effect Unit) -- onComplete
        (Effect Unit)
-       Disposable
 
-data FSError = ApiError String | JsonError String | FSLoading
+data FSError = NotFound String | ApiError String | JsonError String | FSLoading
 
 derive instance genericFSError :: Generic FSError _
 instance showFSError :: Show FSError where
@@ -108,9 +108,10 @@ observeDocF
   -> (Foreign -> Effect Unit)
   -> (String -> Effect Unit)
   -> Effect Unit
-  -> Effect Disposable
-observeDocF fs path id onNext onError onComplete =
-  (runEffectFn6 observeDoc_) fs path id onNext onError onComplete
+  -> Effect Unit
+  -> Effect (Effect Unit)
+observeDocF fs path id onNext onError onEmpty onComplete =
+  (runEffectFn7 observeDoc_) fs path id onNext onError onEmpty onComplete
 
 observeDoc
   :: ∀ a
@@ -120,11 +121,13 @@ observeDoc
   -> String
   -> (Either FSError a -> Effect Unit)
   -> Effect Unit
-  -> Effect Disposable
-observeDoc fs path id onNext onComplete = observeDocF fs path id onNext' onError onComplete
+  -> Effect (Effect Unit)
+observeDoc fs path id onNext onComplete =
+  observeDocF fs path id onNext' onError onEmpty onComplete
   where
     onNext' = lcmap parseDocResult' onNext
     onError = lcmap (Left <<< ApiError) onNext
+    onEmpty = onNext $ Left $ NotFound $  path <> "/" <> id
 
 parseDocResult' :: ∀ a. ReadForeign a => Foreign -> Either FSError a
 parseDocResult' doc = lmap (JsonError <<< show) (JSON.read doc)

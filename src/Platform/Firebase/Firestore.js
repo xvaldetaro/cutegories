@@ -21,7 +21,9 @@ export function getDoc_(db, path, id) {
 		console.log("getDoc", path, id);
 		return getDoc(doc(db, path, id)).then((r) => {
 			const res = r.data();
-			res.id = r.id
+      if (res) {
+        data.id = d.id
+      }
 			console.log("got doc: ", res)
 			return res;
 		});
@@ -31,7 +33,9 @@ export function getDocs_(db, path) {
 			.then((snapshot) => {
 				const res = snapshot.docs.map((d) => {
 					const data = d.data();
-					data.id = d.id
+          if (data) {
+            data.id = d.id
+          }
 					return data
 				})
 				console.log("got docs: ", res)
@@ -39,14 +43,24 @@ export function getDocs_(db, path) {
 			});
 }
 
-export function observeDoc_(db, path, id, onNext, onError, onCompleteEffect) {
+export function observeDoc_(db, path, id, onNext, onError, onEmpty, onCompleteEffect) {
 	return onSnapshot(
 		doc(db, path, id),
 		(d) => {
-			console.log(`onNext doc. path:${path} id:${id} ${d}`);
-			const toPublish = d.data();
-			toPublish.id = id
-			onNext(toPublish)();
+      try {
+        console.log(`onNext doc. path:${path} id:${id} ${d}`);
+        const toPublish = d.data();
+        if (toPublish) {
+          toPublish.id = id
+          onNext(toPublish)();
+        } else {
+          onEmpty()
+        }
+      } catch (e) {
+        const errorStr = `Error1 in observeDoc_. code:${e.code}. msg:${e.message}`
+        console.log(errorStr)
+        onError(errorStr)();
+      }
 		},
 		(e) => {
 			const errorStr = `Error in observeDoc_. code:${e.code}. msg:${e.message}`

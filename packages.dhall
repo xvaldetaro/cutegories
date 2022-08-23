@@ -1,33 +1,9 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.2-20220706/packages.dhall
-        sha256:7a24ebdbacb2bfa27b2fc6ce3da96f048093d64e54369965a2a7b5d9892b6031
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20220816/packages.dhall
+        sha256:8b4467b4b5041914f9b765779c8936d6d4c230b1f60eb64f6269c71812fd7e98
 
--- let overrides =
---       { hyrule-paraglider =
---         { dependencies =
---           [ "aff"
---           , "arrays"
---           , "console"
---           , "datetime"
---           , "effect"
---           , "either"
---           , "exceptions"
---           , "filterable"
---           , "foldable-traversable"
---           , "halogen-subscriptions"
---           , "hyrule"
---           , "integers"
---           , "js-timers"
---           , "maybe"
---           , "prelude"
---           , "refs"
---           , "tailrec"
---           , "tuples"
---           ]
---         , repo = "https://github.com/xvaldetaro/purescript-hyrule-paraglider"
---         , version = "v0.0.1"
---         }
---       }
+let overrides =
+      { hyrule-paraglider = ../hyrule-paraglider/spago.dhall as Location
+      }
 
-in  upstream
-  with hyrule-paraglider = ../hyrule-paraglider/spago.dhall as Location
+in  upstream // overrides

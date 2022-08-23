@@ -2,7 +2,6 @@ module Models.Models where
 
 import Prelude
 
-import Data.DateTime.Instant (Instant)
 import Data.Newtype (class Newtype)
 import Simple.JSON as JSON
 
@@ -13,14 +12,14 @@ newtype PlayerInput = PlayerInput { name :: String }
 newtype Room = Room
   { id :: String
   , title :: String
-  , playerIds :: Array String
+  , players :: Array String
   , chatId :: String
   }
 
 newtype ChatMessage = ChatMessage
-  { timestamp :: Number, player :: Player, text :: String }
+  { timestamp :: Int, playerId :: String, text :: String }
 
-newtype Chat = Chat (Array ChatMessage)
+newtype Chat = Chat { id :: String, messages :: Array ChatMessage }
 
 -- Derives
 derive instance newtypePlayer :: Newtype Player _
@@ -39,6 +38,9 @@ derive instance newtypeChatMessage :: Newtype ChatMessage _
 derive newtype instance readForeignChatMessage :: JSON.ReadForeign ChatMessage
 derive newtype instance writeForeignChatMessage :: JSON.WriteForeign ChatMessage
 derive newtype instance eqChatMessage :: Eq ChatMessage
+derive newtype instance showChat :: Show Chat
+derive newtype instance showChatMessage :: Show ChatMessage
+
 
 derive instance newtypeChat :: Newtype Chat _
 derive newtype instance readForeignChat :: JSON.ReadForeign Chat
