@@ -11,6 +11,7 @@ import FRP.Event (AnEvent)
 import Models.Models (Room(..))
 import Nuts.Room.Chatbox as Chatbox
 import Nuts.Room.RoomLeftBar as RoomLeftBar
+import Nuts.Room.RoomRightBar as RoomRightBar
 import Paraglider.Operator.Take (take)
 import Platform.Deku.Html (bangCss)
 import Platform.Deku.Misc (shareWild, wildSwitcher)
@@ -30,7 +31,6 @@ nut env@{fb} roomId = QualifiedDo.do
       [ RoomLeftBar.nut env roomEv
       , envy D.div (bangCss "grow px-6 h-full")
         $ mkChatBox <$> (take 1 roomEv)
-      , D.div (bangCss "w-64 px-3 flex flex-col border-l border-slate-300") [ rightBar ]
+      , D.div (bangCss "w-64 px-3 flex flex-col border-l border-slate-300")
+        [ RoomRightBar.nut env roomEv ]
       ]
-    where
-    rightBar = text $ (\(Room room) -> joinWith " . - . " room.players) <$> roomEv

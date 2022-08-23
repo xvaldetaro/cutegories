@@ -40,6 +40,7 @@ to generate this file without the comments in this block.
   , "monoid-extras"
   , "newtype"
   , "now"
+  , "ordered-collections"
   , "prelude"
   , "profunctor"
   , "record"

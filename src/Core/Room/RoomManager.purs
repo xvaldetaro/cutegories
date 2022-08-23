@@ -11,7 +11,7 @@ import Effect (Effect)
 import Effect.Now (now)
 import Effect.Ref as Ref
 import FRP.Event (fromEvent)
-import Models.Models (Chat(..), ChatMessage(..), Room(..))
+import Models.Models (Chat(..), ChatMessage(..), Player(..), Room(..))
 import Platform.FRP.FirebaseFRP (docEvent)
 import Platform.FRP.Wild (WildEvent, liftWild', liftWildWithLoading')
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -36,6 +36,7 @@ mockRoom :: Room
 mockRoom = Room
   { id: "mockRoomId"
   , title: "My Mock Room"
+  , admin: "mockPlayer1"
   , players: [ "mockPlayer1", "mockPlayer2" ]
   , chatId: "mockChatId"
   }
@@ -61,3 +62,6 @@ observeRoom _ _ = pure mockRoom
 
 observeChat :: ∀ s m. Korok s m => FirebaseEnv -> String -> WildEvent m FSError Chat
 observeChat {bus} id = liftWildWithLoading' $ fromEvent bus.event
+
+-- getPlayers :: ∀ s m. Korok s m => FirebaseEnv -> Array String -> WildEvent m FSError (Array Player)
+-- getPlayers {bus} id

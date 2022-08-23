@@ -5,19 +5,22 @@ import Prelude
 import Data.Newtype (class Newtype)
 import Simple.JSON as JSON
 
+type PlayerId = String
+
 type PlayerIn r = { name :: String | r}
-newtype Player = Player (PlayerIn ( id :: String ))
+newtype Player = Player (PlayerIn ( id :: PlayerId ))
 newtype PlayerInput = PlayerInput { name :: String }
 
 newtype Room = Room
   { id :: String
   , title :: String
-  , players :: Array String
+  , admin :: PlayerId
+  , players :: Array PlayerId
   , chatId :: String
   }
 
 newtype ChatMessage = ChatMessage
-  { timestamp :: Int, playerId :: String, text :: String }
+  { timestamp :: Int, playerId :: PlayerId, text :: String }
 
 newtype Chat = Chat { id :: String, messages :: Array ChatMessage }
 
