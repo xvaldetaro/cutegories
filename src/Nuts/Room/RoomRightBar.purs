@@ -19,8 +19,8 @@ nut :: ∀ s m l p. Env m -> AnEvent m Room -> Nut_ s m l p
 nut env roomEv = Doku.do
   let wildPlayers = observePlayers roomEv
   let playersEv = unliftDone wildPlayers
-  D.div (bangCss "flex flex-col")
-    [ D.div (bangCss "text-lg font-bold") [text_ "Players"]
+  D.div (bangCss "bg-gray-800 w-64 px-3 flex flex-col")
+    [ D.div (bangCss "text-lg font-semibold") [text_ "Players"]
     , wildSwitcher empty (\_ -> RoomPlayerList.nut env roomEv playersEv ) wildPlayers
     ]
 

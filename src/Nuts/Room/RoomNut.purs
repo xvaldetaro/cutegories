@@ -4,8 +4,7 @@ import Prelude
 
 import App.Env (Env, Nut_)
 import Core.Room.RoomManager (observeRoom)
-import Data.String (joinWith)
-import Deku.Control (envy, text)
+import Deku.Control (envy)
 import Deku.DOM as D
 import FRP.Event (AnEvent)
 import Models.Models (Room(..))
@@ -31,6 +30,5 @@ nut env@{fb} roomId = QualifiedDo.do
       [ RoomLeftBar.nut env roomEv
       , envy D.div (bangCss "grow px-6 h-full")
         $ mkChatBox <$> (take 1 roomEv)
-      , D.div (bangCss "w-64 px-3 flex flex-col border-l border-slate-300")
-        [ RoomRightBar.nut env roomEv ]
+      , RoomRightBar.nut env roomEv
       ]

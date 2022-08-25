@@ -7,12 +7,12 @@ module.exports = {
 	mode: "development",
 	entry: "./src/index.js",
 	output: {
-		path: path.resolve(__dirname, "dist"),
+		path: path.resolve(__dirname, "public"),
 		filename: "bundle.js",
 	},
 	plugins: [
 		new HtmlWebpackPlugin({
-			template: "index.html",
+			template: "public/index.html",
 		}),
 	],
 	module: {
@@ -62,10 +62,10 @@ module.exports = {
 	},
 	devServer: {
 		static: {
-			directory: path.join(__dirname, "dist"),
+			directory: path.join(__dirname, "public"),
 		},
 		historyApiFallback: {
-			index: "index.html",
+			index: "public/index.html",
 		},
 	},
 };

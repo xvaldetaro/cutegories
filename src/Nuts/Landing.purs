@@ -5,7 +5,6 @@ import Prelude
 import App.Navigation (navigate)
 import App.Route as Route
 import Control.Alt ((<|>))
-import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String (length)
 import Data.Tuple.Nested ((/\))
@@ -17,8 +16,9 @@ import Deku.Do (useState)
 import Deku.Do as Doku
 import Deku.Listeners as DL
 import FRP.Event.VBus (V)
-import Nuts.CSS.CSSSnippets (buttonCss, cardCss)
-import Nuts.Dumb.Input as Input
+import Nuts.CSS.CSSSnippets (cardCss)
+import Nuts.Dumb.Btn as Btn
+import Nuts.Dumb.Input (inputCss, inputText)
 import Platform.Deku.Html (bangCss, combineCss, css, enterUp)
 
 type UIEvents = V
@@ -28,8 +28,9 @@ type UIEvents = V
 
 nut :: Nut
 nut = Doku.do
-  roomNamePu /\ roomNameEv <- useState ""
   errorPu /\ errorEv <- useState Nothing
+  roomNamePu /\ roomNameEv <- useState ""
+
   let
       showError = ((const Nothing) <$> roomNameEv) <|> errorEv
       errorNut = D.div
@@ -44,29 +45,30 @@ nut = Doku.do
         if (length roomId == 0) then errorPu (Just "Please Enter Room Id")
         else navigate $ Route.Room roomId
 
+      createGameBlock = Doku.do
+        D.div (bangCss "w-full")
+          [ Btn.teal "Create a Game" (css "text-lg w-full") (pure $ pure unit)
+          ]
+
+      joinGameTextInput =
+        inputText
+          ( (pure $ D.Placeholder := "Room ID #")
+              <|> (DL.textInput $ pure roomNamePu)
+                <|> (enterUp $ roomNameEv <#> doJoinRoom)
+                  <|> (bangCss $ inputCss <> css "w-full mt-1")
+          )
+
+      joinGameBlock = Doku.do
+        D.div (bangCss "w-full")
+          [ joinGameTextInput
+          , Btn.teal "Join a Game" "w-full mb-8 mt-3 text-lg" (roomNameEv <#> doJoinRoom)
+          ]
+
       mainNut = D.div
         ( bangCss $ cardCss <> "flex-col flex w-96 items-center px-8" )
-        [ D.div (bangCss "text-lg font-bold mb-6 mt-6 text-slate-500") [ text_ "Create a Game" ]
-        , D.div (bangCss $ buttonCss <> "w-full text-center") [ text_ "Create" ]
+        [ createGameBlock
         , break
-        -- Join section
-        , D.div (bangCss "text-lg font-bold mb-4 text-slate-500") [ text_ "Join a Game" ]
-        , Input.nut
-          { forId: "roomid"
-          , labelText: pure "Game Room Id:"
-          , inputAttrs: oneOf
-            [ pure $ D.Placeholder := "Enter ID here..."
-            , DL.textInput $ pure roomNamePu
-            , enterUp $ roomNameEv <#> doJoinRoom
-            ]
-          }
-        , D.div
-            (oneOf
-              [ bangCss $ buttonCss <> "w-full text-center mb-8"
-              , DL.click $ roomNameEv <#> doJoinRoom
-              ]
-            )
-            [ text_ "Enter Room" ]
+        , joinGameBlock
         ]
 
   D.div_ [ errorNut, mainNut ]

@@ -18,7 +18,7 @@ nut currentRouteEv =
   D.div
     ( bangCss'
       [ css "h-14 px-0 flex flex-row items-stretch justify-start"
-      , css "text-slate-400 font-semibold text-md border-b-2"
+      , css "font-semibold text-lg shadow-sm bg-gray-900 text-gray-300"
       ]
     )
     [ menuItem Route.Landing "Home" ""
@@ -31,8 +31,8 @@ nut currentRouteEv =
     menuItem route text extraCss = D.a
       ( (pure $ D.Href := safeHref route)
         <|> combineCss
-          [ pure $ css "hidden transition hover:text-teal-500 px-4 align-middle md:flex items-center"
-          , currentRouteEv <#> (\r -> if r == route then css "text-teal-500" else "")
+          [ pure $ css "hidden transition hover:text-white hover:bg-gray-800 px-4 align-middle md:flex items-center"
+          , currentRouteEv <#> (\r -> if r == route then css "text-white bg-gray-800" else "")
           ]
       )
       [ text_ text ]

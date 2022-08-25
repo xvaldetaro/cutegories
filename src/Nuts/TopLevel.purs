@@ -25,7 +25,7 @@ nut = do
   let
       closureWithRouteEv :: AnEvent m Route -> Nut_ s m l p
       closureWithRouteEv currentRouteEv =
-        D.div (bangCss "flex flex-col h-screen")
+        D.div (bangCss "flex flex-col h-screen text-gray-100 bg-gray-700")
           [ Nav.nut currentRouteEv
           , switcher D.div (bangCss "h-full") routeToChild currentRouteEv
           ]

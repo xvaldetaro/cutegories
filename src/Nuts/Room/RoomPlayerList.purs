@@ -50,12 +50,13 @@ nut {fb: {myId}} roomEv playersEv =
 
   rowUi (Player {id, name}) =
     let hiddenCss (Room {admin}) = if (admin /= myId) || (id == myId) then css "hidden" else "" in
-    D.li (bangCss "px-3 py-2 font-semibold flex justify-between")
-      [ D.div_ [text_ $ name]
+    let nameCss = if id == myId then (css "text-white") else (css "text-gray-300") in
+    D.li (bangCss "px-3 py-2 font-medium flex justify-between")
+      [ D.div (bangCss nameCss) [text_ $ name]
       , D.button
         ( -- ( click $ pure (log $ "Removing " <> id) )
            (combineCss
-                [ pure $ Btn.css
+                [ pure $ Btn.baseCss
                     <> css "hover:bg-red-600 bg-red-800 text-slate-100 rounded-full px-2"
                 , hiddenCss <$> roomEv
                 ]

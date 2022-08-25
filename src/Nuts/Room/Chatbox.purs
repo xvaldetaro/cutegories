@@ -18,6 +18,7 @@ import Deku.Listeners (click, textInput)
 import FRP.Event (AnEvent, filterMap, withLast)
 import Models.Models (Chat, ChatMessage(..))
 import Nuts.Dumb.Btn as Btn
+import Nuts.Dumb.Input (inputCss, inputText)
 import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Platform.Deku.Html (bangCss, css, enterUp)
@@ -43,8 +44,7 @@ happy {fb} chatEv = Doku.do
       rowsEv = switchMap (oneOfMap mkMessageRow) newMessagesEv
 
   D.div (bangCss "flex flex-col h-full")
-    [ D.div (bangCss "text-xl text-center font-bold") [text_ "Chat"]
-    , dyn D.div (bangCss "bg-slate-50 grow") rowsEv
+    [ dyn D.div (bangCss "grow") rowsEv
     , typeBox
     ]
 
@@ -55,21 +55,20 @@ happy {fb} chatEv = Doku.do
         pushMessageTextEv = combineLatest pushTextGo chatEv inputValEv
     in
     D.div (bangCss "flex mt-4 mb-10 w-full")
-      [ D.input
-          ( bangCss "grow border rounded-md border-slate-500 mr-2 px-2 py-1"
+      [ inputText
+          ( (bangCss $ inputCss <> "mr-2 grow")
             <|> (textInput $ pure pushInputVal)
               <|> (enterUp $ pushMessageTextEv)
                 <|> ((\_ -> D.Value := "") <$> clearEv)
           )
-          []
-      , Btn.nut "Send" (css "px-8") pushMessageTextEv
+      , Btn.gray "Send" (css "px-8") pushMessageTextEv
       ]
 
   mkMessageRow (ChatMessage {timestamp, playerId, text}) =
-    pure $ pure $ insert_ $ D.div (bangCss "p-2 flex flex-col w-full justify-between ")
-          [ D.div (bangCss "flex items-center")
-            [ D.div (bangCss "border font-semibold rounded-xl px-1 bg-slate-200 mr-2") [text_ playerId]
-            , D.div (bangCss "text-sm font-semibold") [text_ $ show timestamp]
+    pure $ pure $ insert_ $ D.div (bangCss "p-2 w-full justify-between ")
+          [ D.div (bangCss "flex items-baseline")
+            [ D.div (bangCss "font-medium text-gray-400 mr-2") [text_ playerId]
+            , D.div (bangCss "text-xs font-medium text-gray-400") [text_ $ show timestamp]
             ]
-          , D.div (bangCss "pl-1") [text_ text]
+          , D.div (bangCss "text-gray-100") [text_ text]
           ]

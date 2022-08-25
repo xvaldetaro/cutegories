@@ -18,7 +18,7 @@ import Nuts.Dumb.Btn as Btn
 import Platform.Deku.Html (bangCss, combineCss, css)
 
 nut :: ∀ s m l p. Env m -> AnEvent m Room -> Nut_ s m l p
-nut env roomEv = D.div (bangCss "w-64 flex px-3 flex-col border-r border-slate-300")
+nut env roomEv = D.div (bangCss "bg-gray-800 w-64 flex px-3 flex-col")
   [ D.div_ [text $ (\(Room {id}) -> "Room #: " <> id) <$> roomEv]
   , controls
   ]
@@ -36,7 +36,7 @@ nut env roomEv = D.div (bangCss "w-64 flex px-3 flex-col border-r border-slate-3
     , D.button
       ( (click $ createGame <$> roomEv)
           <|> combineCss
-              [ pure (Btn.css <> css "w-full")
+              [ pure (Btn.baseCss <> Btn.tealCss <> css "w-full")
               , (if _ then "" else css "hover:bg-red-100 bg-red-100 cursor-not-allowed") <<< hasEnoughPlayers
                   <$> roomEv
               ]
