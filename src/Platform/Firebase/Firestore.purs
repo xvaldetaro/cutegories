@@ -5,9 +5,11 @@ import Prelude
 import Control.Promise (Promise, toAffE)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
+import Data.Foldable (oneOfMap)
 import Data.Generic.Rep (class Generic)
 import Data.Profunctor (lcmap)
 import Data.Show.Generic (genericShow)
+import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Aff (Aff, try)
 import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6, runEffectFn7)
@@ -33,6 +35,7 @@ data DocumentSnapshot
 foreign import removeUndefineds :: Foreign -> Foreign
 
 foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocumentReference)
+foreign import updateDoc_ :: EffectFn4 Firestore String String Foreign (Promise DocumentReference)
 foreign import getDoc_ :: EffectFn3 Firestore String String (Promise Foreign)
 foreign import setDoc_ :: EffectFn4 Firestore String String Foreign (Promise Unit)
 foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
@@ -48,6 +51,16 @@ foreign import observeDoc_
        (String -> Effect Unit) -- onError
        (Effect Unit) -- onEmpty
        (Effect Unit) -- onComplete
+       (Effect Unit)
+
+-- params: db path id onNext onError onCompleteEffect
+-- returns Disposable effect
+foreign import observeCollection_
+  :: EffectFn4
+       Firestore
+       String
+       (Array Foreign -> Effect Unit) -- onNext
+       (String -> Effect Unit) -- onError
        (Effect Unit)
 
 data FSError = NotFound String | ApiError String | JsonError String | FSLoading
@@ -84,6 +97,21 @@ addDoc
   -> a
   -> Aff (Either FSError DocumentReference)
 addDoc fs path x = addDocF fs path $ JSON.writeImpl x
+
+updateDocF :: Firestore -> String -> String -> Foreign -> Aff (Either FSError DocumentReference)
+updateDocF fs path id x = do
+  ei <- try $ toAffE $ (runEffectFn4 updateDoc_) fs path id (removeUndefineds x)
+  pure $ lmap (ApiError <<< show) ei
+
+updateDoc
+  :: ∀ a
+   . WriteForeign a
+  => Firestore
+  -> String
+  -> String
+  -> a
+  -> Aff (Either FSError DocumentReference)
+updateDoc fs path id fields = updateDocF fs path id $ JSON.writeImpl fields
 
 getDocF :: Firestore -> String -> String -> Aff (Either FSError Foreign)
 getDocF fs path id = do
@@ -128,6 +156,31 @@ observeDoc fs path id onNext onComplete =
     onNext' = lcmap parseDocResult' onNext
     onError = lcmap (Left <<< ApiError) onNext
     onEmpty = onNext $ Left $ NotFound $  path <> "/" <> id
+
+observeCollectionF
+  :: Firestore
+  -> String
+  -> (Array Foreign -> Effect Unit)
+  -> (String -> Effect Unit)
+  -> Effect (Effect Unit)
+observeCollectionF fs path onNext onError =
+  (runEffectFn4 observeCollection_) fs path onNext onError
+
+observeCollection
+  :: ∀ a
+  . ReadForeign a
+  => Firestore
+  -> String
+  -> (Either FSError (Array a) -> Effect Unit)
+  -> Effect (Effect Unit)
+observeCollection fs path onNext =
+  observeCollectionF fs path onNext' onError
+  where
+    onNext' = lcmap parseCollectionResult' onNext
+    onError = lcmap (Left <<< ApiError) onNext
+
+parseCollectionResult' :: ∀ a. ReadForeign a => Array Foreign -> Either FSError (Array a)
+parseCollectionResult' = traverse parseDocResult'
 
 parseDocResult' :: ∀ a. ReadForeign a => Foreign -> Either FSError a
 parseDocResult' doc = lmap (JsonError <<< show) (JSON.read doc)

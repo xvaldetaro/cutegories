@@ -1,9 +1,8 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20220816/packages.dhall
-        sha256:8b4467b4b5041914f9b765779c8936d6d4c230b1f60eb64f6269c71812fd7e98
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20220822/packages.dhall
+        sha256:908b4ffbfba37a0a4edf806513a555d0dbcdd0cde7abd621f8d018d2e8ecf828
 
 let overrides =
-      { hyrule-paraglider = ../hyrule-paraglider/spago.dhall as Location
-      }
+      { hyrule-paraglider = ../hyrule-paraglider/spago.dhall as Location }
 
 in  upstream // overrides

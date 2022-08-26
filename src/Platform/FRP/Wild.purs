@@ -10,7 +10,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.Ord.Generic (genericCompare)
 import Data.Show.Generic (genericShow)
-import FRP.Event (AnEvent, filterMap, keepLatest)
+import FRP.Event (ZoraEvent, filterMap, keepLatest)
 
 -- | Wild abstracts data that comes "from the wild", i.e. data that needs to be loaded and can error
 -- | Works like an Either with an extra "Loading" state
@@ -42,59 +42,58 @@ instance applyWild :: Apply (Wild e) where
 
 -- | An Event of Wild data.
 -- | Provides helpers for chaining sequential wild operations
-newtype WildEvent m e a = WildEvent (AnEvent m (Wild e a))
+newtype WildEvent e a = WildEvent (ZoraEvent (Wild e a))
 
-instance functorWildEvent :: Functor (WildEvent m e) where
+instance functorWildEvent :: Functor (WildEvent e) where
   map f (WildEvent ev) = WildEvent $ map (map f) ev
 
-instance applyWildEvent :: MonadST s m => Apply (WildEvent m e) where
+instance applyWildEvent :: Apply (WildEvent e) where
   apply = ap
 
-instance applicativeWildEvent :: MonadST s m => Applicative (WildEvent m e) where
+instance applicativeWildEvent :: Applicative (WildEvent e) where
   pure x = WildEvent $ pure $ Done x
 
-instance monadWildEvent :: MonadST s m => Monad (WildEvent m e)
-instance bindWildEvent :: MonadST s m => Bind (WildEvent m e) where
+instance monadWildEvent :: Monad (WildEvent e)
+instance bindWildEvent :: Bind (WildEvent e) where
   bind (WildEvent ev) fm = WildEvent $ keepLatest $ ev <#> case _ of
     Done x -> let (WildEvent innerEv) = fm x in innerEv
     Loading -> pure Loading
     Error e -> pure $ Error e
 
-unwrapWild :: ∀ m e a. WildEvent m e a -> AnEvent m (Wild e a)
+unwrapWild :: ∀ e a. WildEvent e a -> ZoraEvent (Wild e a)
 unwrapWild (WildEvent e) = e
 
-liftWild :: ∀ m e a. AnEvent m (Either e a) -> WildEvent m e a
+liftWild :: ∀ e a. ZoraEvent (Either e a) -> WildEvent e a
 liftWild ev = WildEvent $ (either Error Done) <$> ev
 
-liftWildWithLoading
-  :: ∀ s m e a. MonadST s m => Applicative m => AnEvent m (Either e a) -> WildEvent m e a
+liftWildWithLoading :: ∀ e a. ZoraEvent (Either e a) -> WildEvent e a
 liftWildWithLoading ev = WildEvent $ ((either Error Done) <$> ev) <|> pure Loading
 
-liftWild' :: ∀ m e a. AnEvent m a -> WildEvent m e a
+liftWild' :: ∀ e a. ZoraEvent a -> WildEvent e a
 liftWild' ev = WildEvent $ Done <$> ev
 
-liftWildWithLoading' :: ∀ s m e a. MonadST s m => Applicative m => AnEvent m a -> WildEvent m e a
+liftWildWithLoading' :: ∀ e a. ZoraEvent a -> WildEvent e a
 liftWildWithLoading' ev = WildEvent $ pure Loading <|> (Done <$> ev)
 
-unliftLoading :: ∀ m e a. Applicative m => WildEvent m e a -> AnEvent m Unit
+unliftLoading :: ∀ e a. WildEvent e a -> ZoraEvent Unit
 unliftLoading (WildEvent ev) = filterMap go ev
   where
   go Loading = Just unit
   go _ = Nothing
 
-unliftDone :: ∀ m e a. Applicative m => WildEvent m e a -> AnEvent m a
+unliftDone :: ∀ e a. WildEvent e a -> ZoraEvent a
 unliftDone (WildEvent ev) = filterMap go ev
   where
   go (Done x) = Just x
   go _ = Nothing
 
-unliftError :: ∀ m e a. Applicative m => WildEvent m e a -> AnEvent m e
+unliftError :: ∀ e a. WildEvent e a -> ZoraEvent e
 unliftError (WildEvent ev) = filterMap go ev
   where
   go (Error e) = Just e
   go _ = Nothing
 
-mapError :: ∀ m e1 e2 a. Applicative m => WildEvent m e1 a -> (e1 -> e2) -> WildEvent m e2 a
+mapError :: ∀ e1 e2 a. WildEvent e1 a -> (e1 -> e2) -> WildEvent e2 a
 mapError (WildEvent ev) f = WildEvent $ go <$> ev
   where
   go (Error e) = Error $ f e

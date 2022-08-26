@@ -1,4 +1,4 @@
-import {collection, getDoc, getDocs, setDoc, addDoc, doc, onSnapshot} from "firebase/firestore"
+import {query, collection, getDoc, getDocs, updateDoc, setDoc, addDoc, doc, onSnapshot} from "firebase/firestore"
 
 // Initialize Cloud Firestore and get a reference to the service
 export const firestoreDb = (app) => () =>
@@ -10,6 +10,11 @@ export const firestoreDb = (app) => () =>
 export function addDoc_(db, path, docObj) {
 		console.log("addDoc", docObj);
 		return addDoc(collection(db, path), docObj);
+}
+
+export function updateDoc_(db, path, id, fieldsObj) {
+		console.log("updateDoc", fieldsObj);
+		return updateDoc(collection(db, path, id), fieldsObj);
 }
 
 export function setDoc_(db, path, id, docObj) {
@@ -69,6 +74,36 @@ export function observeDoc_(db, path, id, onNext, onError, onEmpty, onCompleteEf
 		},
 		() => {
 			onCompleteEffect()
+		},
+	)
+}
+
+export function observeCollection_(db, path, onNext, onError) {
+	return onSnapshot(
+		query(collection(db, path)),
+		(qs) => {
+      try {
+        console.log(`qs. path:${path} size:${qs.size} isEmpty:${qs.empty} ${qs}`);
+        const out = [];
+        qs.forEach((doc) => {
+          const data = doc.data()
+          if (data) {
+            data.id = doc.id;
+            console.log(`Obj in query: ${data}`);
+            out.push(data);
+          }
+        })
+        onNext(out)();
+      } catch (e) {
+        const errorStr = `Error1 in observeCollection_. code:${e.code}. msg:${e.message}`;
+        console.log(errorStr);
+        onError(errorStr)();
+      }
+		},
+		(e) => {
+			const errorStr = `Error in observeCollection_. code:${e.code}. msg:${e.message}`
+			console.log(errorStr)
+			onError(errorStr)();
 		},
 	)
 }

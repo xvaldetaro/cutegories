@@ -2,18 +2,18 @@ module Nuts.Nav where
 
 import Prelude
 
-import App.Env (Nut_)
 import App.Route (Route)
 import App.Route as Route
 import Control.Alt ((<|>))
 import Deku.Attribute ((:=))
 import Deku.Control (text_)
+import Deku.Core (Nut)
 import Deku.DOM as D
-import FRP.Event (AnEvent)
+import FRP.Event (ZoraEvent)
 import Platform.Deku.Html (bangCss', combineCss, css)
 import Platform.Html.Utils (safeHref)
 
-nut :: ∀ s m l p. AnEvent m Route -> Nut_ s m l p
+nut :: ZoraEvent Route -> Nut
 nut currentRouteEv =
   D.div
     ( bangCss'

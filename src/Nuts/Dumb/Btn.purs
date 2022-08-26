@@ -5,30 +5,18 @@ import Prelude
 import Control.Alt ((<|>))
 import Data.String (joinWith)
 import Deku.Control (text_)
-import Deku.Core (class Korok, Domable)
+import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Listeners (click)
 import Effect (Effect)
-import FRP.Event (AnEvent)
+import FRP.Event (ZoraEvent)
 import Platform.Deku.Html (bangCss, css)
 
-teal
-  :: ∀ s m lock payload
-  . Korok s m
-  => String
-  -> String
-  -> AnEvent m (Effect Unit)
-  -> Domable m lock payload
+teal :: String -> String -> ZoraEvent (Effect Unit) -> Nut
 teal text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> tealCss <> extraCss)) [text_ text]
 
-gray
-  :: ∀ s m lock payload
-  . Korok s m
-  => String
-  -> String
-  -> AnEvent m (Effect Unit)
-  -> Domable m lock payload
+gray :: String -> String -> ZoraEvent (Effect Unit) -> Nut
 gray text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> grayCss <> extraCss)) [text_ text]
 

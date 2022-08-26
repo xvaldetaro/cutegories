@@ -3,25 +3,21 @@ module App.Env where
 import Prelude
 
 import Control.Monad.Reader (Reader)
-import Deku.Core (class Korok, Domable)
-import FRP.Event (AnEvent)
-import FRP.Event.VBus (V)
+import Deku.Core (Nut)
+import FRP.Event (ZoraEvent)
+import Hyrule.Zora (Zora)
 import Platform.Firebase.Firebase (FirebaseEnv)
 
 data AppEvent
 
-type Env m =
+type Env =
   { fb :: FirebaseEnv
+  , myId :: String
 
   -- App Bus
-  , appEvent :: AnEvent m AppEvent
-  , appPush :: AppEvent -> m Unit
+  , appEvent :: ZoraEvent AppEvent
+  , appPush :: AppEvent -> Zora Unit
   }
 
-type AppNut = ∀ s m lock payload. Korok s m => Reader (Env m) (Domable m lock payload)
-
-type AppNut_ s m lock payload = Korok s m => Reader (Env m) (Domable m lock payload)
-
-type Nut_ s m l p = Korok s m => Domable m l p
-
+type AppNut = Reader Env Nut
 

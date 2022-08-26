@@ -5,15 +5,12 @@ import Prelude
 import App.Env (Env)
 import App.Navigation (redirectToLandingIfInialRouteIsInvalid)
 import Control.Alt ((<|>))
-import Control.Monad.Reader (runReader)
-import Core.Room.RoomManager (mockChat)
 import Deku.Control (switcher_, text_)
-import Deku.Core (Domable, Nut)
+import Deku.Core (Domable)
 import Deku.DOM as D
-import Deku.Interpret (FFIDOMSnapshot)
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
-import FRP.Event (Event, bus, fromEvent, keepLatest)
+import FRP.Event (ZoraEvent, bus, fromEvent, keepLatest)
 import Nuts.TopLevel as TopLevel
 import Paraglider.Operator.FromAff (fromAff)
 import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
@@ -21,22 +18,19 @@ import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 main :: Effect Unit
 main = do
   redirectToLandingIfInialRouteIsInvalid
-  runInBody switcherNut
+  runInBody (switcher_ D.div identity (pure loadingNut <|> topLevelNutEv))
 
   where
-  switcherNut :: ∀ l. Domable Effect l (FFIDOMSnapshot -> Effect Unit)
-  switcherNut = switcher_ D.div identity (fromEvent (pure loadingNut <|> topLevelNutEv))
+  topLevelNutEv :: ∀ l p. ZoraEvent (Domable l p)
+  topLevelNutEv = TopLevel.nut <$> envEv
 
-  topLevelNutEv :: ∀ l. Event (Domable Effect l (FFIDOMSnapshot -> Effect Unit))
-  topLevelNutEv = runReader TopLevel.nut <$> envEv
-
-  envEv :: Event (Env Effect)
+  envEv :: ZoraEvent Env
   envEv = keepLatest (firebaseEv <#> createWithFb)
     where
-    createWithFb fb = bus \push event -> {fb, appPush: push, appEvent: event}
+    createWithFb fb = bus \push event -> {fb, myId: "7Mgc8HyJowTUe0gxLS3", appPush: push, appEvent: event}
 
-  firebaseEv :: Event FirebaseEnv
-  firebaseEv = fromAff $ startFirebase mockChat
+  firebaseEv :: ZoraEvent FirebaseEnv
+  firebaseEv = fromEvent $ fromAff $ startFirebase
 
-  loadingNut :: Nut
+  loadingNut :: ∀ l p. Domable l p
   loadingNut = text_ "Loading..."

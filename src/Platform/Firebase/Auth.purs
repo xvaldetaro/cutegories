@@ -77,7 +77,11 @@ foreign import firebaseAuth :: FirebaseApp -> Effect (Promise FirebaseAuth)
 firebaseAuthAff :: FirebaseApp -> Aff FirebaseAuth
 firebaseAuthAff = toAffE <<< firebaseAuth
 
-foreign import onAuthStateChanged :: (Error -> Effect Unit) -> (Foreign -> Effect Unit) -> FirebaseAuth -> Effect (Promise (Effect Unit))
+foreign import onAuthStateChanged
+  :: (Error -> Effect Unit)
+  -> (Foreign -> Effect Unit)
+  -> FirebaseAuth
+  -> Effect (Promise (Effect Unit))
 
 authStateChangedEventWithAnonymousAccountCreation :: FirebaseAuth -> Event User
 authStateChangedEventWithAnonymousAccountCreation auth = makeEvent \k -> do

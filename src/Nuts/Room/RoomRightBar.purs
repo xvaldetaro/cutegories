@@ -2,20 +2,20 @@ module Nuts.Room.RoomRightBar where
 
 import Prelude
 
-import App.Env (Env, Nut_)
+import App.Env (Env)
 import Control.Plus (empty)
-import Deku.Control (text, text_)
-import Deku.Core (class Korok)
+import Deku.Control (text_)
+import Deku.Core (Nut)
 import Deku.DOM as D
-import FRP.Event (AnEvent)
-import Models.Models (Player(..), Room(..))
+import FRP.Event (ZoraEvent)
+import Models.Models (Player, Room)
 import Nuts.Room.RoomPlayerList as RoomPlayerList
 import Platform.Deku.Html (bangCss)
 import Platform.Deku.Misc (wildSwitcher)
 import Platform.FRP.Wild (WildEvent, liftWildWithLoading', unliftDone)
 import Platform.Firebase.Firestore (FSError)
 
-nut :: ∀ s m l p. Env m -> AnEvent m Room -> Nut_ s m l p
+nut :: Env -> ZoraEvent Room -> Nut
 nut env roomEv = Doku.do
   let wildPlayers = observePlayers roomEv
   let playersEv = unliftDone wildPlayers
@@ -24,7 +24,7 @@ nut env roomEv = Doku.do
     , wildSwitcher empty (\_ -> RoomPlayerList.nut env roomEv playersEv ) wildPlayers
     ]
 
-observePlayers :: ∀ s m. Korok s m => AnEvent m Room -> WildEvent m FSError (Array Player)
+observePlayers :: ZoraEvent Room -> WildEvent FSError (Array Player)
 observePlayers roomEv = liftWildWithLoading' $ go <$> roomEv
   where
-  go (Room {players}) = (\id -> Player { name: "Name Name", id }) <$> players
+  go {players} = (\id -> { name: "Name Name", id }) <$> players
