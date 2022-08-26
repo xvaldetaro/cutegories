@@ -14,22 +14,20 @@ import Nuts.Room.RoomLeftBar as RoomLeftBar
 import Nuts.Room.RoomRightBar as RoomRightBar
 import Paraglider.Operator.Take (take)
 import Platform.Deku.Html (bangCss)
-import Platform.Deku.Misc (shareWild, wildSwitcher)
+import Platform.Deku.Misc (shareWild, wildSwitcherHappy)
 import Platform.Deku.QualifiedDo as QualifiedDo
-import Platform.FRP.Wild (unliftDone)
 
 nut :: Env -> String -> Nut
 nut env@{fb} roomId = QualifiedDo.do
   wildRoom <- shareWild $ observeRoom fb roomId
-  wildRoom # wildSwitcher (bangCss "h-full") \_ -> happy (unliftDone wildRoom)
+  wildRoom # wildSwitcherHappy (bangCss "h-full") happy
 
   where
   happy :: ZoraEvent Room -> _
   happy roomEv =
     let mkChatBox = \{id} -> Chatbox.nut env id in
-    D.div (bangCss "flex h-full items-stretch [&>*]:pt-8")
+    D.div (bangCss "flex h-full items-stretch")
       [ RoomLeftBar.nut env roomEv
-      , envy D.div (bangCss "grow px-6 h-full")
-        $ mkChatBox <$> (take 1 roomEv)
+      , envy D.div (bangCss "grow h-full") $ mkChatBox <$> (take 1 roomEv)
       , RoomRightBar.nut env roomEv
       ]

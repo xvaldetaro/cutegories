@@ -20,16 +20,16 @@ import Models.Models (Chat, ChatMessage, RoomId)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Paraglider.Operator.SwitchMap (switchMap)
-import Platform.Deku.Html (bangCss, css, enterUp)
+import Platform.Deku.Html (bangCss, bangCss', css, enterUp)
 import Platform.Deku.Misc (shareWild, wildSwitcher)
-import Platform.FRP.Wild (WildEvent, unliftDone)
+import Platform.FRP.Wild (WildEvent)
 import Platform.Firebase.Firestore (FSError)
 
 nut :: Env -> RoomId -> Nut
 nut env@{ fb } roomId = Doku.do
   wildChat :: WildEvent FSError Chat <- shareWild $ observeChat fb roomId
   wildChat # wildSwitcher (bangCss "h-full w-full")
-    \_ -> happy env roomId (unliftDone wildChat)
+    {happy: happy env roomId, loading: Nothing, error: Nothing}
 
 happy :: Env -> RoomId -> ZoraEvent Chat -> Nut
 happy env roomId chatEv = Doku.do
@@ -44,8 +44,14 @@ happy env roomId chatEv = Doku.do
 
     rowsEv = switchMap (oneOfMap mkMessageRow) newMessagesEv
 
+    chatCss = bangCss'
+      [ css "grow overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full"
+      , css "scrollbar-track-rounded-full scrollbar-thumb-gray-900 scrollbar-track-gray-800"
+      , css "first:pt-6 shadow-md px-3"
+      ]
+
   D.div (bangCss "flex flex-col h-full")
-    [ dyn D.div (bangCss "grow") rowsEv
+    [ dyn D.div chatCss rowsEv
     , typeBox
     ]
 
@@ -59,7 +65,7 @@ happy env roomId chatEv = Doku.do
       pushTextGo text = sendMessage env roomId text onMessageSent *> pushClear unit
       pushMessageTextEv = pushTextGo <$> inputValEv
     in
-      D.div (bangCss "flex mt-4 mb-10 w-full")
+      D.div (bangCss "flex mt-4 mb-6 px-3 w-full")
         [ inputText
             ( (bangCss $ inputCss <> "mr-2 grow")
                 <|> (textInput $ pure pushInputVal)

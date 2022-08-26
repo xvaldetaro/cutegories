@@ -2,6 +2,7 @@ module Dummy where
 
 import Prelude
 
+import Data.Int (floor)
 import Effect (Effect)
 import Effect.Class.Console (log)
 
@@ -24,7 +25,7 @@ b s = s <> "asfd"
 
 main :: Effect Unit
 main = do
-  log $ b <<< a 2 $ 3
+  log $ show $ floor 1661482737490.0
 
 
 -- type Crow = (c :: String)

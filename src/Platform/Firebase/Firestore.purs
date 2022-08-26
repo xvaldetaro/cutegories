@@ -7,12 +7,13 @@ import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Foldable (oneOfMap)
 import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe)
 import Data.Profunctor (lcmap)
 import Data.Show.Generic (genericShow)
 import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Aff (Aff, try)
-import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn6, runEffectFn7)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn5, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn5, runEffectFn6, runEffectFn7)
 import Foreign (Foreign)
 import Platform.Firebase.Config (FirebaseApp)
 import Simple.JSON (class ReadForeign, class WriteForeign)
@@ -35,7 +36,8 @@ data DocumentSnapshot
 foreign import removeUndefineds :: Foreign -> Foreign
 
 foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocumentReference)
-foreign import updateDoc_ :: EffectFn4 Firestore String String Foreign (Promise DocumentReference)
+foreign import updateDoc_
+  :: EffectFn5 Firestore String String Foreign (Array ArrayUpdateF) (Promise Unit)
 foreign import getDoc_ :: EffectFn3 Firestore String String (Promise Foreign)
 foreign import setDoc_ :: EffectFn4 Firestore String String Foreign (Promise Unit)
 foreign import getDocs_ :: EffectFn2 Firestore String (Promise Foreign)
@@ -53,12 +55,15 @@ foreign import observeDoc_
        (Effect Unit) -- onComplete
        (Effect Unit)
 
+type QueryConstraint_ = { type :: String, args :: Array String }
+
 -- params: db path id onNext onError onCompleteEffect
 -- returns Disposable effect
 foreign import observeCollection_
-  :: EffectFn4
+  :: EffectFn5
        Firestore
        String
+       (Array QueryConstraint_)
        (Array Foreign -> Effect Unit) -- onNext
        (String -> Effect Unit) -- onError
        (Effect Unit)
@@ -98,20 +103,42 @@ addDoc
   -> Aff (Either FSError DocumentReference)
 addDoc fs path x = addDocF fs path $ JSON.writeImpl x
 
-updateDocF :: Firestore -> String -> String -> Foreign -> Aff (Either FSError DocumentReference)
-updateDocF fs path id x = do
-  ei <- try $ toAffE $ (runEffectFn4 updateDoc_) fs path id (removeUndefineds x)
+updateDocF
+  :: Firestore
+  -> String
+  -> String
+  -> Foreign
+  -> Array ArrayUpdateF
+  -> Aff (Either FSError Unit)
+updateDocF fs path id objectFragment arrayUpdates = do
+  ei <- try $ toAffE $ (runEffectFn5 updateDoc_) fs path id objectFragment arrayUpdates
   pure $ lmap (ApiError <<< show) ei
 
 updateDoc
-  :: ∀ a
+  :: ∀ a b
    . WriteForeign a
+  => WriteForeign b
   => Firestore
   -> String
   -> String
   -> a
-  -> Aff (Either FSError DocumentReference)
-updateDoc fs path id fields = updateDocF fs path id $ JSON.writeImpl fields
+  -> Array (ArrayUpdate b)
+  -> Aff (Either FSError Unit)
+updateDoc fs path id objectFragment arrayUpdates = updateDocF fs path id
+  (removeUndefineds $ JSON.writeImpl objectFragment)
+  (processArrayUpdates arrayUpdates)
+
+data ArrayOp = ArrayUnion | ArrayRemove
+type ArrayUpdate a = { field :: String, op :: ArrayOp, elements :: Array a }
+type ArrayUpdateF = { field :: String, op :: String, elements :: Foreign }
+
+processArrayUpdates :: ∀ a. WriteForeign a => Array (ArrayUpdate a) -> Array (ArrayUpdateF)
+processArrayUpdates updates = go <$> updates
+  where
+  convertOp ArrayUnion = "union"
+  convertOp ArrayRemove = "remove"
+  go { field, op, elements } =
+    { field, op: convertOp op, elements: removeUndefineds $ JSON.writeImpl elements }
 
 getDocF :: Firestore -> String -> String -> Aff (Either FSError Foreign)
 getDocF fs path id = do
@@ -143,7 +170,7 @@ observeDocF fs path id onNext onError onEmpty onComplete =
 
 observeDoc
   :: ∀ a
-  . ReadForeign a
+   . ReadForeign a
   => Firestore
   -> String
   -> String
@@ -153,31 +180,48 @@ observeDoc
 observeDoc fs path id onNext onComplete =
   observeDocF fs path id onNext' onError onEmpty onComplete
   where
-    onNext' = lcmap parseDocResult' onNext
-    onError = lcmap (Left <<< ApiError) onNext
-    onEmpty = onNext $ Left $ NotFound $  path <> "/" <> id
+  onNext' = lcmap parseDocResult' onNext
+  onError = lcmap (Left <<< ApiError) onNext
+  onEmpty = onNext $ Left $ NotFound $ path <> "/" <> id
 
 observeCollectionF
   :: Firestore
   -> String
+  -> Array QueryConstraint
   -> (Array Foreign -> Effect Unit)
   -> (String -> Effect Unit)
   -> Effect (Effect Unit)
-observeCollectionF fs path onNext onError =
-  (runEffectFn4 observeCollection_) fs path onNext onError
+observeCollectionF fs path ctrs onNext onError =
+  (runEffectFn5 observeCollection_) fs path (processConstraints ctrs) onNext onError
 
 observeCollection
   :: ∀ a
-  . ReadForeign a
+   . ReadForeign a
   => Firestore
   -> String
+  -> Array QueryConstraint
   -> (Either FSError (Array a) -> Effect Unit)
   -> Effect (Effect Unit)
-observeCollection fs path onNext =
-  observeCollectionF fs path onNext' onError
+observeCollection fs path ctrs onNext =
+  observeCollectionF fs path ctrs onNext' onError
   where
-    onNext' = lcmap parseCollectionResult' onNext
-    onError = lcmap (Left <<< ApiError) onNext
+  onNext' = lcmap parseCollectionResult' onNext
+  onError = lcmap (Left <<< ApiError) onNext
+
+processConstraints :: Array QueryConstraint -> Array QueryConstraint_
+processConstraints constraints = go <$> constraints
+  where
+  go (OrderBy { field, direction }) = { type: "orderBy", args: [ field, directionStr direction ] }
+  go (Ids ids) = { type: "whereDocIds", args: ids }
+
+directionStr :: OrderDirection -> String
+directionStr Asc = "asc"
+directionStr Desc = "desc"
+
+data OrderDirection = Asc | Desc
+data QueryConstraint
+  = OrderBy { field :: String, direction :: OrderDirection }
+  | Ids (Array String)
 
 parseCollectionResult' :: ∀ a. ReadForeign a => Array Foreign -> Either FSError (Array a)
 parseCollectionResult' = traverse parseDocResult'

@@ -1,4 +1,4 @@
-import {query, collection, getDoc, getDocs, updateDoc, setDoc, addDoc, doc, onSnapshot} from "firebase/firestore"
+import {arrayUnion, arrayRemove, documentId, where, orderBy, query, collection, getDoc, getDocs, updateDoc, setDoc, addDoc, doc, onSnapshot} from "firebase/firestore"
 
 // Initialize Cloud Firestore and get a reference to the service
 export const firestoreDb = (app) => () =>
@@ -12,9 +12,28 @@ export function addDoc_(db, path, docObj) {
 		return addDoc(collection(db, path), docObj);
 }
 
-export function updateDoc_(db, path, id, fieldsObj) {
-		console.log("updateDoc", fieldsObj);
-		return updateDoc(collection(db, path, id), fieldsObj);
+function processArrayUpdates(aus) {
+  const objFragment = {}
+  aus.forEach((au) => {
+    if (au.elements.length < 1) {
+      throw Exception("processArrayUpdates got 0 elements");
+    }
+    if (au.op == "union") {
+      objFragment[au.field] = arrayUnion(...au.elements);
+    } else if (au.op == "remove") {
+      objFragment[au.field] = arrayRemove(...au.elements);
+    } else {
+      throw Exception("processArrayUpdates invalid op " + au.op);
+    }
+  })
+  return objFragment;
+}
+
+export function updateDoc_(db, path, id, objectFragment, arrayUpdates) {
+  const aus = processArrayUpdates(arrayUpdates);
+  const final = {...objectFragment, ...aus};
+  return updateDoc(doc(db, path, id), final).then((x) => {
+  })
 }
 
 export function setDoc_(db, path, id, docObj) {
@@ -78,9 +97,38 @@ export function observeDoc_(db, path, id, onNext, onError, onEmpty, onCompleteEf
 	)
 }
 
-export function observeCollection_(db, path, onNext, onError) {
+function getConstraints(ctrs) {
+  const constraints = []
+  ctrs.forEach((c) => {
+    const type = c.type;
+    const args = c.args;
+    if (type == "orderBy") {
+      constraints.push(orderBy(args[0], args[1]))
+    } else if (type == "whereDocIds") {
+      if (args.length == 0) {
+        throw Exception("whereDocIds constraint got zero ids in args")
+      }
+      constraints.push(where(documentId(), "in", args))
+    } else {
+      const errorStr = `Invalid type ${c.type}`;
+      console.log(errorStr);
+      throw Exception(errorStr)
+    }
+  });
+  return constraints;
+}
+
+export function observeCollection_(db, path, ctrs, onNext, onError) {
+  let constraints;
+  try {
+    constraints = getConstraints(ctrs);
+  } catch (e) {
+    const errorStr = `Error processing constraints in observeCollection_: ${e.message}`;
+    console.log(errorStr);
+    onError(errorStr)();
+  }
 	return onSnapshot(
-		query(collection(db, path)),
+		query(collection(db, path), ...constraints),
 		(qs) => {
       try {
         console.log(`qs. path:${path} size:${qs.size} isEmpty:${qs.empty} ${qs}`);
@@ -89,7 +137,6 @@ export function observeCollection_(db, path, onNext, onError) {
           const data = doc.data()
           if (data) {
             data.id = doc.id;
-            console.log(`Obj in query: ${data}`);
             out.push(data);
           }
         })

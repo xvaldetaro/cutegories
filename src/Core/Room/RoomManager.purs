@@ -3,23 +3,22 @@ module Core.Room.RoomManager where
 import Prelude
 
 import App.Env (Env)
-import Data.Array as Array
+import Data.Array (sortWith)
 import Data.DateTime.Instant (unInstant)
-import Data.Either (Either(..))
-import Data.Int (floor)
+import Data.Either (Either)
 import Data.Newtype (unwrap)
-
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
-import Effect.Ref as Ref
-import FRP.Event (ZoraEvent, fromEvent)
-import Models.Models (Chat(..), ChatMessage(..), ChatMessageIn, Player(..), Room(..), RoomId)
-import Platform.FRP.FirebaseFRP (addDocEvent, collectionEvent, docEvent)
-import Platform.FRP.Wild (Wild, WildEvent, liftWild', liftWildWithLoading')
+import Models.Models (Chat, ChatMessageIn, Player, Room, RoomId, RoomIn, PlayerId)
+import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
+import Platform.FRP.Wild (WildEvent)
 import Platform.Firebase.Firebase (FirebaseEnv)
-import Platform.Firebase.Firestore (DocumentReference, FSError, addDoc)
+import Platform.Firebase.Firestore (ArrayOp(..), DocumentReference, FSError, OrderDirection(..), QueryConstraint(..), addDoc, updateDoc)
+
+playerPath :: String
+playerPath = "players"
 
 roomPath :: String
 roomPath = "rooms"
@@ -27,11 +26,41 @@ roomPath = "rooms"
 chatPath :: RoomId -> String
 chatPath roomId = "rooms/" <> roomId <> "/messages"
 
-observeRoom ::FirebaseEnv -> RoomId -> WildEvent FSError Room
+observeRoom :: FirebaseEnv -> RoomId -> WildEvent FSError Room
 observeRoom fb id = docEvent fb.db roomPath id
 
-observeChat ::FirebaseEnv -> RoomId -> WildEvent FSError Chat
+observeRoomPlayers :: FirebaseEnv -> Array PlayerId -> WildEvent FSError (Array Player)
+observeRoomPlayers fb players = sortWith (_.name) <$> collectionEvent fb.db playerPath
+  [ Ids players ]
+
+createRoom :: Env -> String -> (Either FSError DocumentReference -> Effect Unit) -> Effect Unit
+createRoom { fb, myId } title onDone =
+  let
+    (room :: RoomIn ()) = { title, admin: myId, players: [] }
+  in
+    launchAff_ do
+      result <- addDoc fb.db roomPath room
+      liftEffect $ onDone result
+
+addPlayerToRoom
+  :: FirebaseEnv -> PlayerId -> RoomId -> (Either FSError Unit -> Effect Unit) -> Effect Unit
+addPlayerToRoom fb myId roomId onDone =
+  launchAff_ do
+    result <- updateDoc fb.db roomPath roomId {}
+      [ { field: "players", op: ArrayUnion, elements: [ myId ] } ]
+    liftEffect $ onDone result
+
+rmPlayerFromRoom
+  :: FirebaseEnv -> PlayerId -> RoomId -> (Either FSError Unit -> Effect Unit) -> Effect Unit
+rmPlayerFromRoom fb myId roomId onDone =
+  launchAff_ do
+    result <- updateDoc fb.db roomPath roomId {}
+      [ { field: "players", op: ArrayRemove, elements: [ myId ] } ]
+    liftEffect $ onDone result
+
+observeChat :: FirebaseEnv -> RoomId -> WildEvent FSError Chat
 observeChat fb roomId = collectionEvent fb.db (chatPath roomId)
+  [ OrderBy { field: "ts", direction: Asc } ]
 
 sendMessage
   :: Env
@@ -47,7 +76,7 @@ sendMessage { fb, myId } roomId text onDone = do
   where
   mkMessage :: Effect (ChatMessageIn ())
   mkMessage = do
-    ts <- floor <<< unwrap <<< unInstant <$> now
+    ts <- unwrap <<< unInstant <$> now
     pure { ts, sender: myId, text }
 
 -- mockRoom :: Room

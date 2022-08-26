@@ -8,6 +8,7 @@ import Deku.Control (switcher, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import FRP.Event (ZoraEvent)
+import Nuts.Debug as Debug
 import Nuts.Game.GameNut as GameNut
 import Nuts.Landing (nut) as Landing
 import Nuts.Nav as Nav
@@ -22,7 +23,7 @@ nut env =
       closureWithRouteEv currentRouteEv =
         D.div (bangCss "flex flex-col h-screen text-gray-100 bg-gray-700")
           [ Nav.nut currentRouteEv
-          , switcher D.div (bangCss "h-full") routeToChild currentRouteEv
+          , switcher D.div (bangCss "h-full overflow-y-auto") routeToChild currentRouteEv
           ]
         where
         routeToChild :: Route -> Nut
