@@ -16,13 +16,12 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype)
 import Effect (Effect)
-import Effect.Aff (Aff, Error, error, launchAff_, throwError)
-import Effect.Class (liftEffect)
-import Effect.Class.Console as Log
-import Effect.Ref as Ref
-import FRP.Event (Event, makeEvent)
+import Effect.Aff (Aff, Error, try)
+import FRP.Event (Event)
 import Foreign (Foreign)
+import Paraglider.Operator.MakeEventAff (makeEventAff)
 import Platform.Firebase.Config (FirebaseApp)
+import Platform.Firebase.FbErr (FbErr, mapFbErr, mkErr)
 import Simple.JSON as JSON
 
 type MultiFactorInfo =
@@ -69,6 +68,8 @@ newtype User = User
 derive instance Newtype User _
 derive newtype instance JSON.ReadForeign User
 derive newtype instance JSON.WriteForeign User
+derive newtype instance Show User
+
 
 data FirebaseAuth
 
@@ -83,18 +84,38 @@ foreign import onAuthStateChanged
   -> FirebaseAuth
   -> Effect (Promise (Effect Unit))
 
-authStateChangedEventWithAnonymousAccountCreation :: FirebaseAuth -> Event User
-authStateChangedEventWithAnonymousAccountCreation auth = makeEvent \k -> do
-  unsub <- Ref.new (pure unit)
-  launchAff_ do
-    us <- toAffE $ onAuthStateChanged (show >>> Log.error)
-      ( \u -> do
-          let user' = JSON.read u
-          case user' of
-            Left e -> do
-              throwError (error $ (show (JSON.writeJSON u) <> " " <> show e))
-            Right user -> k user
-      )
-      auth
-    liftEffect $ Ref.write us unsub
-  pure $ join $ Ref.read unsub
+authStateChangedEventWithAnonymousAccountCreation :: FirebaseAuth -> Event (Either FbErr User)
+authStateChangedEventWithAnonymousAccountCreation auth = makeEventAff \k -> do
+  let
+    onAuthStateError = k <<< Left <<< mkErr "AuthStateChangedErrCb"
+    onAuthStateUser = k <<< parseIncomingUser
+
+  eiUnsub <- try $ toAffE $ onAuthStateChanged onAuthStateError onAuthStateUser auth
+
+  let (unsub :: Effect Unit) = case eiUnsub of
+        Left e -> (k $ Left $ mkErr "Auth Creation" e) *> (pure unit)
+        Right unsub -> unsub
+
+  pure unsub
+
+parseIncomingUser :: Foreign -> Either FbErr User
+parseIncomingUser fu =
+  let eiJsErrUser = JSON.read fu in
+  let errPrefix = show (JSON.writeJSON fu) in
+  mapFbErr ("parseIncomingUser: " <> errPrefix) eiJsErrUser
+
+-- authStateChangedEventWithAnonymousAccountCreation' :: FirebaseAuth -> Event User
+-- authStateChangedEventWithAnonymousAccountCreation' auth = makeEvent \k -> do
+--   unsub <- Ref.new (pure unit)
+--   launchAff_ do
+--     us <- toAffE $ onAuthStateChanged (show >>> Log.error)
+--       ( \u -> do
+--           let user' = JSON.read u
+--           case user' of
+--             Left e -> do
+--               throwError (error $ (show (JSON.writeJSON u) <> " " <> show e))
+--             Right user -> k user
+--       )
+--       auth
+--     liftEffect $ Ref.write us unsub
+--   pure $ join $ Ref.read unsub

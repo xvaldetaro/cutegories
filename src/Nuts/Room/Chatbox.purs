@@ -2,9 +2,8 @@ module Nuts.Room.Chatbox where
 
 import Prelude
 
-import App.Env (Env)
 import Control.Alt ((<|>))
-import Core.Room.RoomManager (observeChat, sendMessage)
+import Core.Room.RoomManager (sendMessage)
 import Data.Array (drop, length)
 import Data.Either (Either(..))
 import Data.Foldable (oneOfMap)
@@ -13,26 +12,17 @@ import Deku.Attribute ((:=))
 import Deku.Control (dyn, text_)
 import Deku.Core (Nut, bussed, insert_)
 import Deku.DOM as D
-import Deku.Do as Doku
 import Deku.Listeners (textInput)
-import FRP.Event (ZoraEvent, filterMap, withLast)
-import Models.Models (Chat, ChatMessage, RoomId)
+import FRP.Event (filterMap, withLast)
+import Models.Models (ChatMessage)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
+import Nuts.Room.RoomEnv (RoomEnv)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Platform.Deku.Html (bangCss, bangCss', css, enterUp)
-import Platform.Deku.Misc (shareWild, wildSwitcher)
-import Platform.FRP.Wild (WildEvent)
-import Platform.Firebase.Firestore (FSError)
 
-nut :: Env -> RoomId -> Nut
-nut env@{ fb } roomId = Doku.do
-  wildChat :: WildEvent FSError Chat <- shareWild $ observeChat fb roomId
-  wildChat # wildSwitcher (bangCss "h-full w-full")
-    {happy: happy env roomId, loading: Nothing, error: Nothing}
-
-happy :: Env -> RoomId -> ZoraEvent Chat -> Nut
-happy env roomId chatEv = Doku.do
+nut :: RoomEnv ->  Nut
+nut {env, chatEv, roomId} = Doku.do
   let
     goNewMessages { last, now } =
       let
@@ -50,7 +40,7 @@ happy env roomId chatEv = Doku.do
       , css "first:pt-6 shadow-md px-3"
       ]
 
-  D.div (bangCss "flex flex-col h-full")
+  D.div (bangCss "flex flex-col h-full grow")
     [ dyn D.div chatCss rowsEv
     , typeBox
     ]

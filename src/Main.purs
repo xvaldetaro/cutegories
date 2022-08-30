@@ -18,19 +18,4 @@ import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 main :: Effect Unit
 main = do
   redirectToLandingIfInialRouteIsInvalid
-  runInBody (switcher_ D.div identity (pure loadingNut <|> topLevelNutEv))
-
-  where
-  topLevelNutEv :: ∀ l p. ZoraEvent (Domable l p)
-  topLevelNutEv = TopLevel.nut <$> envEv
-
-  envEv :: ZoraEvent Env
-  envEv = keepLatest (firebaseEv <#> createWithFb)
-    where
-    createWithFb fb = bus \push event -> {fb, myId: "7Mgc8HyJowTUe0gxLS3", appPush: push, appEvent: event}
-
-  firebaseEv :: ZoraEvent FirebaseEnv
-  firebaseEv = fromEvent $ fromAff $ startFirebase
-
-  loadingNut :: ∀ l p. Domable l p
-  loadingNut = text_ "Loading..."
+  runInBody TopLevel.nut

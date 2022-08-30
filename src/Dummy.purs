@@ -5,6 +5,8 @@ import Prelude
 import Data.Int (floor)
 import Effect (Effect)
 import Effect.Class.Console (log)
+import Platform.Firebase.Firestore.Query as Query
+import Simple.JSON (unsafeStringify)
 
 
 -- class Cons "id" String (tail :: Row String) (a :: Row String) <=  R' a where
@@ -25,7 +27,11 @@ b s = s <> "asfd"
 
 main :: Effect Unit
 main = do
-  log $ show $ floor 1661482737490.0
+  pure unit
+  -- let cs = [ Where DocId In (Multiple ["asd", "ddd"])
+  --           , Where (Field "myField") Equals (Single "sss"), OrderBy (Field "field2") Asc]
+  -- let a = {qtype: Collection, path: "asdfasdf/", clauses: cs}
+  -- log $ unsafeStringify $ queryJsDesc a
 
 
 -- type Crow = (c :: String)

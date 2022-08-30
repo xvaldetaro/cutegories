@@ -4,8 +4,7 @@ import Prelude
 
 import Data.String (joinWith)
 import Deku.Attribute (class Attr, Attribute, attr, (:=))
-
-import Deku.DOM (Class)
+import Deku.DOM (Class, Id)
 import Deku.DOM as D
 import Deku.Listeners (keyUp)
 import Effect (Effect)
@@ -16,6 +15,9 @@ import Web.UIEvent.KeyboardEvent as KeyboardEvent
 -- / Creates a Class event from a String
 bangCss :: ∀ e .Attr e Class String => String -> ZoraEvent (Attribute e)
 bangCss s = pure (D.Class := s)
+
+bangId :: ∀ e .Attr e Id String => String -> ZoraEvent (Attribute e)
+bangId s = pure (D.Id := s)
 
 -- / Creates a Class event from a concatenation of an Array String
 bangCss' :: ∀ e .Attr e Class String => Array String -> ZoraEvent (Attribute e)

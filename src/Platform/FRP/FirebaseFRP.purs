@@ -2,11 +2,14 @@ module Platform.FRP.FirebaseFRP where
 
 import Prelude
 
-import Data.Either (Either)
-import FRP.Event (ZoraEvent, fromEvent, makeEvent)
+import App.Env (FbEvent)
+import FRP.Event (fromEvent, makeEvent)
 import Paraglider.Operator.FromAff (fromAff)
-import Platform.FRP.Wild (WildEvent, liftWildWithLoading)
-import Platform.Firebase.Firestore (DocumentReference, FSError, Firestore, QueryConstraint, addDoc, observeCollection, observeDoc)
+import Platform.Firebase.Firestore.Common (Firestore, DocumentReference)
+import Platform.Firebase.Firestore.DocRef (DocRef)
+import Platform.Firebase.Firestore.Query (Query)
+import Platform.Firebase.Firestore.Read (observeDoc, observeQueryCollection)
+import Platform.Firebase.Firestore.Write (addDoc)
 import Simple.JSON (class ReadForeign, class WriteForeign)
 
 docEvent
@@ -15,23 +18,17 @@ docEvent
    => Firestore
    -> String
    -> String
-   -> WildEvent FSError a
-docEvent fs path id =
-  liftWildWithLoading
-    $ fromEvent
-      $ makeEvent \dsPush -> observeDoc fs path id dsPush (pure unit)
+   -> FbEvent a
+docEvent fs path id = fromEvent $ makeEvent \dsPush -> observeDoc fs path id dsPush (pure unit)
 
 collectionEvent
   :: ∀ a
    . ReadForeign a
    => Firestore
-   -> String
-   -> Array QueryConstraint
-   -> WildEvent FSError (Array a)
-collectionEvent fs path ctrs =
-  liftWildWithLoading
-    $ fromEvent
-      $ makeEvent \dsPush -> observeCollection fs path ctrs dsPush
+   -> Query
+   -> FbEvent (Array a)
+collectionEvent fs query = fromEvent $ makeEvent \dsPush ->
+  observeQueryCollection fs query dsPush
 
 addDocEvent
   :: ∀ a
@@ -39,5 +36,5 @@ addDocEvent
    => Firestore
    -> String
    -> a
-   -> ZoraEvent (Either FSError DocumentReference)
+   -> FbEvent DocRef
 addDocEvent fs path x = fromEvent <<< fromAff $ addDoc fs path x

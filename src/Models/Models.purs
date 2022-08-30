@@ -1,14 +1,18 @@
 module Models.Models where
 
-type PlayerId = String
+import Platform.Firebase.Firestore.DocRef (DocRef)
 
-type PlayerIn r = { name :: String | r}
-type Player = PlayerIn ( id :: PlayerId )
+
+type UserId = String
+
+type PlayerId = String
+type PlayerIn r = { name :: String, userId :: UserId | r}
+type Player = PlayerIn (id :: PlayerId)
+type PlayerWithRef = PlayerIn (ref :: DocRef)
 
 type RoomIn r =
   { title :: String
   , admin :: PlayerId
-  , players :: Array PlayerId
   | r
   }
 type RoomId = String

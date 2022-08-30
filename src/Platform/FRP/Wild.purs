@@ -3,13 +3,23 @@ module Platform.FRP.Wild where
 import Prelude
 
 import Control.Alt ((<|>))
+import Control.Monad.ST.Class (class MonadST, liftST)
+import Control.Monad.ST.Internal as Ref
+import Data.Bifunctor (lmap)
 import Data.Either (Either, either)
 import Data.Eq.Generic (genericEq)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype)
 import Data.Ord.Generic (genericCompare)
 import Data.Show.Generic (genericShow)
-import FRP.Event (ZoraEvent, filterMap, keepLatest)
+import Effect.Aff (Aff, Error)
+import FRP.Event (AnEvent, ZoraEvent, filterMap, fromEvent, keepLatest, makeEvent, subscribe)
+import Hyrule.Zora (Zora)
+import Paraglider.Operator.FromAff (fromAffSafe)
+import Paraglider.Operator.MemoBeh (memoBeh)
+import Paraglider.Operator.Replay (replayRefCount)
+import Paraglider.Operator.ToClosure (toClosure)
 
 -- | Wild abstracts data that comes "from the wild", i.e. data that needs to be loaded and can error
 -- | Works like an Either with an extra "Loading" state
@@ -42,6 +52,7 @@ instance applyWild :: Apply (Wild e) where
 -- | An Event of Wild data.
 -- | Provides helpers for chaining sequential wild operations
 newtype WildEvent e a = WildEvent (ZoraEvent (Wild e a))
+derive instance newtypeWildEvent :: Newtype (WildEvent e a) _
 
 instance functorWildEvent :: Functor (WildEvent e) where
   map f (WildEvent ev) = WildEvent $ map (map f) ev
@@ -59,14 +70,20 @@ instance bindWildEvent :: Bind (WildEvent e) where
     Loading -> pure Loading
     Error e -> pure $ Error e
 
-unwrapWild :: ∀ e a. WildEvent e a -> ZoraEvent (Wild e a)
-unwrapWild (WildEvent e) = e
-
 liftWild :: ∀ e a. ZoraEvent (Either e a) -> WildEvent e a
 liftWild ev = WildEvent $ (either Error Happy) <$> ev
 
 liftWildWithLoading :: ∀ e a. ZoraEvent (Either e a) -> WildEvent e a
 liftWildWithLoading ev = WildEvent $ ((either Error Happy) <$> ev) <|> pure Loading
+
+-- memoWild :: ∀ e a b. ZoraEvent (Either e a) -> (WildEvent e a -> b) -> ZoraEvent b
+-- memoWild ups cont = toClosure (memoWildM ups) cont
+
+-- memoWildM :: ∀ e a. ZoraEvent (Either e a) -> Zora (WildEvent e a)
+-- memoWildM ups = (WildEvent <<< loadingIfNecessary) <$> (replayRefCount eventOfWild)
+--   where
+--   eventOfWild = (either Error Happy) <$> ups
+--   loadingIfNecessary sharedEv = race sharedEv (pure Loading <|> sharedEv)
 
 liftWild' :: ∀ e a. ZoraEvent a -> WildEvent e a
 liftWild' ev = WildEvent $ Happy <$> ev
