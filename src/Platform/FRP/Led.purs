@@ -17,6 +17,7 @@ import Effect.Aff (Aff, Error)
 import FRP.Event (AnEvent, ZoraEvent, filterMap, fromEvent, keepLatest, makeEvent, subscribe)
 import Hyrule.Zora (Zora)
 import Paraglider.Operator.Combine (combineFold)
+import Paraglider.Operator.DistinctUntilChanged (distinctUntilChanged)
 import Paraglider.Operator.FromAff (fromAffSafe)
 import Paraglider.Operator.MemoBeh (memoBeh)
 import Paraglider.Operator.Replay (replayRefCount)
@@ -44,7 +45,7 @@ errorEvent ev = filterMap errorGo ev
   errorGo _ = Nothing
 
 loadingEvent :: ∀ a. ZoraEvent a -> ZoraEvent Boolean
-loadingEvent ev = initialIfAsync true falseEv
+loadingEvent ev = distinctUntilChanged $ initialIfAsync true falseEv
   where
   falseEv = const false <$> ev
 

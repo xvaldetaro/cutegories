@@ -18,6 +18,7 @@ import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 import Platform.Util.ErrorHandling (liftSuccess)
 
 data AppEvent
+  = ShowAppError String
 
 type Env =
   { fb :: FirebaseEnv
