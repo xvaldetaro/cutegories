@@ -4,44 +4,41 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Core.Room.RoomManager (sendMessage)
-import Data.Array (drop, length)
-import Data.Either (Either(..))
-import Data.Foldable (oneOfMap)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.DateTime.Instant (instant, toDateTime)
+import Data.Either (Either(..), hush)
+import Data.Formatter.DateTime (format, parseFormatString)
+import Data.Map as Map
+import Data.Maybe (fromMaybe)
+import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
-import Deku.Control (dyn, text_)
+import Deku.Control (dyn, text, text_)
 import Deku.Core (Nut, bussed, insert_)
 import Deku.DOM as D
+import Deku.Do as Doku
 import Deku.Listeners (textInput)
-import FRP.Event (filterMap, withLast)
 import Models.Models (ChatMessage)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Nuts.Room.RoomEnv (RoomEnv)
-import Paraglider.Operator.SwitchMap (switchMap)
+import Paraglider.Operator.Combine (combineLatest)
 import Platform.Deku.Html (bangCss, bangCss', css, enterUp)
+import Platform.Deku.Misc (dynDiffOnlyAddition, useMemoBeh')
 
 nut :: RoomEnv ->  Nut
-nut {env, chatEv, roomId} = Doku.do
+nut {env, chatEv, playersEv, roomId} = Doku.do
   let
-    goNewMessages { last, now } =
-      let
-        last' = fromMaybe [] last
-      in
-        if length last' < length now then Just (drop (length last') now) else Nothing
-
-    newMessagesEv = filterMap goNewMessages (withLast $ chatEv)
-
-    rowsEv = switchMap (oneOfMap mkMessageRow) newMessagesEv
-
     chatCss = bangCss'
       [ css "grow overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full"
       , css "scrollbar-track-rounded-full scrollbar-thumb-gray-900 scrollbar-track-gray-800"
       , css "first:pt-6 shadow-md px-3"
       ]
+  playerNamesEv <- useMemoBeh'
+    (Map.fromFoldable <<< map (\{name, userId} -> Tuple userId name) <$> playersEv)
 
   D.div (bangCss "flex flex-col h-full grow")
-    [ dyn D.div chatCss rowsEv
+    [ dynDiffOnlyAddition D.div chatCss (mkMessageRow playerNamesEv) chatEv
     , typeBox
     ]
 
@@ -66,11 +63,18 @@ nut {env, chatEv, roomId} = Doku.do
         , dyn D.div (bangCss "text-red-500") errElem
         ]
 
-  mkMessageRow ({ ts, sender, text } :: ChatMessage) =
-    pure $ pure $ insert_ $ D.div (bangCss "p-2 w-full justify-between ")
+  dateText :: Number -> String
+  dateText ts = fromMaybe "" do
+    formatter <- hush $ parseFormatString "MM/DD/YY - hh:m a"
+    dateTime <- toDateTime <$> (instant $ Milliseconds ts)
+    pure $ format formatter dateTime
+
+  mkMessageRow playerNamesEv { ts, sender, text: msgText } =
+    let playerNameEv = playerNamesEv <#> \nameDict -> fromMaybe "" $ Map.lookup sender nameDict in
+    D.div (bangCss "p-2 w-full justify-between ")
       [ D.div (bangCss "flex items-baseline")
-          [ D.div (bangCss "font-medium text-gray-400 mr-2") [ text_ sender ]
-          , D.div (bangCss "text-xs font-medium text-gray-400") [ text_ $ show ts ]
+          [ D.div (bangCss "font-medium text-gray-400 mr-2") [ text playerNameEv ]
+          , D.div (bangCss "text-xs font-medium text-gray-400") [ text_ $ dateText ts ]
           ]
-      , D.div (bangCss "text-gray-100") [ text_ text ]
+      , D.div (bangCss "text-gray-100") [ text_ msgText ]
       ]

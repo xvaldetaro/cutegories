@@ -32,6 +32,9 @@ type AppNut = Reader Env Nut
 
 type FbEvent a = ZoraEvent (Either FbErr a)
 
+mapFbEvent :: ∀ a b. (a -> b) -> FbEvent a -> FbEvent b
+mapFbEvent f ev = map f <$> ev
+
 mkEnv :: Aff (Either FbErr Env)
 mkEnv = runExceptT do
   fb <- liftSuccess startFirebase

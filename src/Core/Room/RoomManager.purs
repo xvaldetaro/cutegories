@@ -2,14 +2,16 @@ module Core.Room.RoomManager where
 
 import Prelude
 
-import App.Env (Env, FbEvent)
+import App.Env (Env, FbEvent, mapFbEvent)
 import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Except (lift, runExceptT)
 import Data.Array (head)
+import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
 import Data.Either (Either, note)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
+import Data.String (toLower)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
@@ -66,9 +68,11 @@ getPlayerForUser fb userId = runExceptT do
   q = QL.group "players" [QL.whereFieldEquals "userId" userId] # QL.ancestor 1
 
 observeRoomPlayers :: FirebaseEnv -> RoomId -> FbEvent (Array Player)
-observeRoomPlayers fb roomId = collectionEvent fb.db q
+observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   where
-  q = QL.collection (playersPath roomId) [QL.orderByField "name" Query.Asc]
+  -- Firestore orderBy is case sensitive so we need to sort manually here
+  sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
+  q = QL.collection (playersPath roomId) []
 
 createRoom :: Env -> String -> String -> Aff (Either FbErr DocRef)
 createRoom { fb, self } myName title =

@@ -2,13 +2,17 @@ module Dummy where
 
 import Prelude
 
+import Control.Monad.Except (lift, runExceptT)
+import Data.Formatter.DateTime (format, parseFormatString)
 import Data.Int (floor)
 import Effect (Effect)
 import Effect.Class.Console (log)
+import Effect.Now (nowDateTime)
 import FRP.Event (create, subscribe)
 import Hyrule.Zora (liftImpure, runImpure)
-import Platform.Deku.Misc (diffAccum)
+import Paraglider.Operator.DiffAccum (diffAccum)
 import Platform.Firebase.Firestore.Query as Query
+import Platform.Util.ErrorHandling (liftEither')
 import Simple.JSON (unsafeStringify)
 
 
@@ -29,15 +33,10 @@ b :: String -> String
 b s = s <> "asfd"
 
 main :: Effect Unit
-main = runImpure do
-  {event, push} <- create
-  let event' = diffAccum (_.id) event
-  void $ subscribe event' \p -> liftImpure $ log $ show p
-  push [{id: 1}, {id: 2}, {id: 3}]
-  push [{id: 1}, {id: 2}, {id: 3}]
-  push [{id: 1}, {id: 2}, {id: 4}]
-  push [{id: 1}, {id: 4}]
-  push [{id: 5}]
+main = void $ runExceptT do
+  f <- liftEither' (const unit) $ parseFormatString "MM/DD/YY - hh:m a"
+  now <- lift nowDateTime
+  lift $ log $ format f now
   -- let cs = [ Where DocId In (Multiple ["asd", "ddd"])
   --           , Where (Field "myField") Equals (Single "sss"), OrderBy (Field "field2") Asc]
   -- let a = {qtype: Collection, path: "asdfasdf/", clauses: cs}

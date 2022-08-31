@@ -29,6 +29,7 @@ to generate this file without the comments in this block.
   , "filterable"
   , "foldable-traversable"
   , "foreign"
+  , "formatters"
   , "halogen"
   , "halogen-hooks"
   , "halogen-store"
