@@ -9,7 +9,7 @@ import Bolson.Control (switcher)
 import Control.Alt ((<|>))
 import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Except (runExceptT)
-import Core.Room.RoomManager (addPlayerToRoom, createRoom, getRoom, getRoomForUserId)
+import Core.Room.RoomManager (addPlayerToRoom, createRoom, getPlayerForUser, getRoom, leaveOrDeleteRoom)
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
@@ -23,10 +23,12 @@ import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Doku
 import Deku.Listeners as DL
+import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import FRP.Event (fromEvent)
 import FRP.Event.VBus (V)
+import Models.Models (PlayerWithRef, removeRef)
 import Nuts.CSS.CSSSnippets (cardCss)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
@@ -36,6 +38,7 @@ import Paraglider.Operator.MemoBeh (memoBeh)
 import Platform.Deku.Html (bangCss, bangId, combineCss, css, enterUp)
 import Platform.Deku.Misc (envyAffResult, envyBurning)
 import Platform.FRP.Led (dataEvent, errorEvent)
+import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firestore.DocRef as DocRef
 import Platform.Util.ErrorHandling (liftEither', liftSuccess, liftSuccess')
 
@@ -51,10 +54,10 @@ nut env = Doku.do
   pushSelfPlayerName /\ selfPlayerNameEv <- useState ""
   pushNewRoomTitle /\ newRoomTitleEv <- useState ""
   let myId = (_.uid) (unwrap env.self)
-  mbRoomEv <- envyAffResult $ getRoomForUserId env.fb myId
+  myPlayerEv <- envyAffResult $ getPlayerForUser env.fb myId
 
   let
-    errorEv = errorEv' <|> (Just <<< show <$> errorEvent mbRoomEv)
+    errorEv = errorEv' <|> (Just <<< show <$> errorEvent myPlayerEv)
 
     showError = ((const Nothing) <$> roomNameEv) <|> errorEv
     errorNut = D.div
@@ -129,6 +132,26 @@ nut env = Doku.do
         , Btn.teal "Join a Game" "w-full mb-8 mt-3 text-lg" (doJoinRoomEv)
         ]
 
+    myRoomId {ref} = DocRef.id <$> DocRef.parent ref
+
+    doLeaveOrDeleteRoom :: PlayerWithRef -> String -> Effect Unit
+    doLeaveOrDeleteRoom player roomId = launchAff_ do
+      eiResult :: Either FbErr Unit <- leaveOrDeleteRoom env.fb roomId (removeRef player)
+      liftEffect $ case eiResult of
+        Left e -> errorPu $ Just $ show e
+        Right _ -> navigate $ Route.Debug
+
+    hasPlayerNut :: PlayerWithRef -> Nut
+    hasPlayerNut player = case myRoomId player of
+      Nothing -> D.div (bangCss "text-lg text-red-500") [text_ "UNEXPECTED missing room"]
+      Just roomId ->
+        D.div
+          (bangCss "")
+          [ D.div (bangCss "text-lg") [text_ $ "You are already in room #" <> roomId]
+          , Btn.teal "Rejoin" "" (pure $ navigate $ Route.Room roomId)
+          , Btn.teal "Leave" "" (pure $ doLeaveOrDeleteRoom player roomId)
+          ]
+
     mainNut = D.div
       ( bangCss $ cardCss <> "flex-col flex w-96 items-center px-8" )
       [ selfPlayerNameTextInput
@@ -138,17 +161,11 @@ nut env = Doku.do
       , joinGameBlock
       ]
 
-    hasRoomNut id = D.div
-      (bangCss "")
-      [ D.div (bangCss "text-lg") [text_ $ "You are already in room #" <> id]
-      , Btn.teal "Rejoin" "" (pure $ navigate $ Route.Room id)
-      ]
-
-  mbRoomEv # switcher_ D.div case _ of
+  myPlayerEv # switcher_ D.div case _ of
     Left e -> text_ $ "Error getting room:" <> show e
-    Right mbRoomId -> case mbRoomId of
+    Right mbPlayer -> case mbPlayer of
       Nothing -> D.div_ [ errorNut, mainNut ]
-      Just roomId -> D.div_ [ errorNut, hasRoomNut roomId ]
+      Just player -> D.div_ [ errorNut, hasPlayerNut player ]
 
   where
   break text = D.div (bangCss "flex flex-row w-full items-center justify-between my-4")

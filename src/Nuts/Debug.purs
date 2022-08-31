@@ -7,7 +7,7 @@ import App.Env (Env)
 import Bolson.Core as BCore
 import Control.Alt ((<|>))
 import Control.Plus (empty)
-import Core.Room.RoomManager (addPlayerToRoom, getRoomForUserId, observeChat, observeRoom, observeRoomPlayers, rmPlayerFromRoom)
+import Core.Room.RoomManager (addPlayerToRoom, getPlayerForUser, observeChat, observeRoom, observeRoomPlayers, rmPlayerFromRoom)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
@@ -28,14 +28,16 @@ import Platform.FRP.FirebaseFRP (collectionEvent)
 import Platform.FRP.Led (loadingEvent)
 import Platform.FRP.Wild (WildEvent, unliftHappy)
 import Platform.Firebase.FbErr (FbErr)
+import Record as Record
+import Type.Proxy (Proxy(..))
 
 nut :: ∀ l p. Env -> Domable l p
 nut env = Doku.do
   let
     myId = (_.uid) (unwrap env.self)
-    mbRoomEv = fromEvent $ fromAff $ getRoomForUserId env.fb myId
+    mbRoomEv = fromEvent $ fromAff $ getPlayerForUser env.fb myId
 
-  text $ show <$> mbRoomEv
+  text $ show <<< map (map (Record.delete (Proxy :: _ "ref"))) <$> mbRoomEv
   --   aDiv = text_ "aDiv"
   --   bDiv = text_ "bDiv"
   --   bF boolean = if boolean
