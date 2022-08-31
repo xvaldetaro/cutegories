@@ -5,6 +5,9 @@ import Prelude
 import Data.Int (floor)
 import Effect (Effect)
 import Effect.Class.Console (log)
+import FRP.Event (create, subscribe)
+import Hyrule.Zora (liftImpure, runImpure)
+import Platform.Deku.Misc (diffAccum)
 import Platform.Firebase.Firestore.Query as Query
 import Simple.JSON (unsafeStringify)
 
@@ -26,8 +29,15 @@ b :: String -> String
 b s = s <> "asfd"
 
 main :: Effect Unit
-main = do
-  pure unit
+main = runImpure do
+  {event, push} <- create
+  let event' = diffAccum (_.id) event
+  void $ subscribe event' \p -> liftImpure $ log $ show p
+  push [{id: 1}, {id: 2}, {id: 3}]
+  push [{id: 1}, {id: 2}, {id: 3}]
+  push [{id: 1}, {id: 2}, {id: 4}]
+  push [{id: 1}, {id: 4}]
+  push [{id: 5}]
   -- let cs = [ Where DocId In (Multiple ["asd", "ddd"])
   --           , Where (Field "myField") Equals (Single "sss"), OrderBy (Field "field2") Asc]
   -- let a = {qtype: Collection, path: "asdfasdf/", clauses: cs}

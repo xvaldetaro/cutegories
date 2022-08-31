@@ -1,1 +1,2 @@
 PlayerList dyn element messes up when a players join and repeats existing names
+Message list doesn't have name or date correct
