@@ -9,29 +9,28 @@ import Data.Array (head)
 import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
 import Data.Either (Either, note)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
 import FRP.Event (ZoraEvent)
-import Models.Models (Chat, ChatMessage, ChatMessageIn, Player, PlayerId, PlayerIn, Room, RoomId, RoomIn, PlayerWithRef)
+import Models.Models (Chat, ChatMessage, ChatMessageIn, GameState(..), Player, PlayerId, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firebase (FirebaseEnv)
-import Platform.Firebase.Firestore.Common (DocumentReference)
 import Platform.Firebase.Firestore.DocRef (DocRef)
 import Platform.Firebase.Firestore.DocRef as DocRef
 import Platform.Firebase.Firestore.QL as QL
 import Platform.Firebase.Firestore.Query (Direction(..))
-import Platform.Firebase.Firestore.Query as Query
 import Platform.Firebase.Firestore.Read (getDoc, queryDocs)
-import Platform.Firebase.Firestore.Write (addDoc, deleteDoc)
-import Platform.Undfnd.Undfnd (undfnd)
+import Platform.Firebase.Firestore.Write (addDoc, deleteDoc, setDoc)
 import Platform.Util.ErrorHandling (liftSuccess)
+import Record as Record
+import Type.Proxy (Proxy(..))
 
 playersPath :: RoomId -> String
 playersPath roomId = "rooms/" <> roomId <> "/players"
@@ -58,14 +57,12 @@ queryMessages fb roomId = queryDocs fb.db q
   where
   q = QL.collection (chatPath roomId) []
 
-getPlayerForUser :: FirebaseEnv -> String -> Aff (Either FbErr (Maybe PlayerWithRef))
+getPlayerForUser :: FirebaseEnv -> UserId -> Aff (Either FbErr (Maybe PlayerWithRef))
 getPlayerForUser fb userId = runExceptT do
   playerArr :: Array PlayerWithRef <- liftSuccess $ queryDocs fb.db q
   pure $ head playerArr
-  -- let mbRoomRef = mbPlayer >>= \{ref} -> DocRef.parent ref
-  -- pure $ DocRef.id <$> mbRoomRef
   where
-  q = QL.group "players" [QL.whereFieldEquals "userId" userId] # QL.ancestor 1
+  q = QL.group "players" [QL.whereFieldEquals "_id" userId]
 
 observeRoomPlayers :: FirebaseEnv -> RoomId -> FbEvent (Array Player)
 observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
@@ -74,24 +71,28 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
-createRoom :: Env -> String -> String -> Aff (Either FbErr DocRef)
+createRoom :: Env -> String -> String -> Aff (Either FbErr Unit)
 createRoom { fb, self } myName title =
   let
     self' = unwrap self
-    (room :: RoomIn ()) = { title, admin: self'.uid }
+    myId = self'.uid
+    (room :: RoomIn ()) = { title, gameState: NeverStarted }
   in
   runExceptT do
-    roomRef <- liftSuccess $ addDoc fb.db roomPath room
-    void $ liftSuccess $ addPlayerToRoom fb (DocRef.id roomRef) {userId: self'.uid, name: myName}
-    pure roomRef
+    liftSuccess $ setDoc fb.db roomPath myId room
+    liftSuccess $ addPlayerToRoom fb myId myId {name: myName}
 
-leaveOrDeleteRoom :: FirebaseEnv -> RoomId -> Player -> Aff (Either FbErr Unit)
-leaveOrDeleteRoom fb roomId player = runExceptT do
-  mbRoom <- liftSuccess $ getRoom fb roomId
-  room <- liftEither $ note (DocNotFound $ "room " <> roomId) mbRoom
-  liftSuccess $ if room.admin == player.userId
+addPlayerToRoom :: FirebaseEnv -> RoomId -> UserId -> PlayerIn () -> Aff (Either FbErr Unit)
+addPlayerToRoom fb roomId userId playerIn = setDoc fb.db (playersPath roomId) userId playerPlusId
+  where
+  -- Need to add extra id to do group queries (https://stackoverflow.com/questions/56149601/firestore-collection-group-query-on-documentid)
+  playerPlusId = Record.insert (Proxy :: _ "_id") userId playerIn
+
+leaveOrDeleteRoom :: FirebaseEnv -> RoomId -> UserId -> Aff (Either FbErr Unit)
+leaveOrDeleteRoom fb roomId userId =
+  if roomId == userId
     then deleteRoom fb roomId
-    else rmPlayerFromRoom fb roomId player.id
+    else rmPlayerFromRoom fb roomId userId
 
 deleteRoom :: FirebaseEnv -> RoomId -> Aff (Either FbErr Unit)
 deleteRoom fb roomId = runExceptT do
@@ -113,11 +114,8 @@ deleteMessages fb roomId = runExceptT do
     $ traverse (\{id} -> deleteDoc fb.db (chatPath roomId) id) messages
   void $ liftEither $ sequence deletionResults
 
-addPlayerToRoom :: FirebaseEnv -> RoomId -> PlayerIn () -> Aff (Either FbErr DocRef)
-addPlayerToRoom fb roomId playerIn = addDoc fb.db (playersPath roomId) playerIn
-
-rmPlayerFromRoom :: FirebaseEnv -> RoomId -> PlayerId -> Aff (Either FbErr Unit)
-rmPlayerFromRoom fb roomId playerId = deleteDoc fb.db (playersPath roomId) playerId
+rmPlayerFromRoom :: FirebaseEnv -> RoomId -> UserId -> Aff (Either FbErr Unit)
+rmPlayerFromRoom fb roomId userId = deleteDoc fb.db (playersPath roomId) userId
 
 observeChat :: FirebaseEnv -> RoomId -> ZoraEvent (Either FbErr Chat)
 observeChat fb roomId = collectionEvent fb.db q
@@ -128,13 +126,10 @@ sendMessage
   :: Env
   -> RoomId
   -> String
-  -> (Either FbErr DocRef -> Effect Unit)
-  -> Effect Unit
-sendMessage { fb, self } roomId text onDone = do
-  chatMessage <- mkMessage
-  launchAff_ do
-    result <- addDoc fb.db (chatPath roomId) chatMessage
-    liftEffect $ onDone result
+  -> Aff (Either FbErr DocRef)
+sendMessage { fb, self } roomId text = do
+  chatMessage <- liftEffect mkMessage
+  addDoc fb.db (chatPath roomId) chatMessage
   where
   mkMessage :: Effect (ChatMessageIn ())
   mkMessage = do

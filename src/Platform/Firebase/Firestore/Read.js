@@ -18,24 +18,24 @@ export function getDoc_(db, path, id, just, nothing) {
   });
 }
 export function queryDocs_(db, queryDesc) {
-		return getDocs(buildQuery(db, queryDesc))
-			.then((snapshot) => {
-				const res = snapshot.docs.map((d) => {
-          if (d.exists()) {
-            const data = d.data();
-            data.id = d.id;
-            data.ref = d.ref;
-            return data
-          } else {
-            throw Exception(`document doesn't exist in DocumentSnapshot!!!`)
-          }
-				})
-				console.log(`queryDocs ${queryDesc.path} returned: ${res.length} items`)
-				return res;
-			}, (e) => {
-        console.log(e);
-        throw e
-      });
+  return getDocs(buildQuery(db, queryDesc))
+    .then((snapshot) => {
+      const res = snapshot.docs.map((d) => {
+        if (d.exists()) {
+          const data = d.data();
+          data.id = d.id;
+          data.ref = d.ref;
+          return data
+        } else {
+          throw Exception(`document doesn't exist in DocumentSnapshot!!!`)
+        }
+      })
+      console.log(`queryDocs ${queryDesc.path} returned: ${res.length} items`)
+      return res;
+    }, (e) => {
+      console.log(e);
+      throw e
+    });
 }
 
 const docObserversByPath = {}
@@ -189,6 +189,7 @@ function buildQuery(db, desc) {
   } catch (e) {
     console.log("error building query:", e);
     console.log(desc);
+    throw e;
   }
 }
 

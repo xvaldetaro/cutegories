@@ -23,13 +23,13 @@ nut { env: {fb, self}, roomId, roomEv, playersEv} =
   myId = (_.uid) $ unwrap self
 
   kickPlayer id = launchAff_ $ void $ rmPlayerFromRoom fb roomId id
-  rowUi {userId, name, id} =
-    let hiddenCss {admin} = if (admin /= myId) || (userId == myId) then css "hidden" else "" in
+  rowUi {name, id: userId} =
+    let hiddenCss {id: admin} = if (admin /= myId) || (userId == myId) then css "hidden" else "" in
     let nameCss = if userId == myId then (css "text-white") else (css "text-gray-300") in
     D.li (bangCss "px-3 py-2 font-medium flex items-center justify-between")
       [ D.div (bangCss nameCss) [text_ name]
       , D.button
-        ( (click $ pure (kickPlayer id))
+        ( (click $ pure (kickPlayer userId))
             <|> (combineCss
                 [ pure $ Btn.baseCss
                     <> css "hover:bg-red-600 bg-red-800 text-slate-100 rounded-md py-0 px-2"

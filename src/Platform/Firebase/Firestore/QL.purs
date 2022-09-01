@@ -14,6 +14,9 @@ whereFieldEquals field value = Where (Field field) Equals (Single value)
 whereFieldIn :: String -> Array String -> Clause
 whereFieldIn field arr = Where (Field field) In (Multiple arr)
 
+whereDocIdEquals :: String -> Clause
+whereDocIdEquals value = Where DocId Equals (Single value)
+
 whereDocIdIn :: Array String -> Clause
 whereDocIdIn arr = Where DocId In (Multiple arr)
 

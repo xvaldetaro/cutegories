@@ -86,7 +86,7 @@ nut env = Doku.do
           eiRoomRef <- createRoom env playerName roomTitle
           liftEffect $ case eiRoomRef of
             Left e -> errorPu $ Just $ show e
-            Right ref -> navigate $ Route.Room (DocRef.id ref)
+            Right _ -> navigate $ Route.Room myId
 
     doCreateRoomEv = combineLatest doCreateRoom newRoomTitleEv selfPlayerNameEv
 
@@ -111,7 +111,7 @@ nut env = Doku.do
         eiPlayerRef <- runExceptT do
           mbRoom <- liftSuccess' show $ getRoom env.fb roomId
           room <- liftEither' show $ note "The room doesn't Exist" mbRoom
-          liftSuccess' show $ addPlayerToRoom env.fb room.id {userId: myId, name: playerName}
+          liftSuccess' show $ addPlayerToRoom env.fb room.id myId { name: playerName }
         liftEffect $ case eiPlayerRef of
           Left e -> errorPu $ Just e
           Right _ -> navigate $ Route.Room roomId
@@ -136,7 +136,7 @@ nut env = Doku.do
 
     doLeaveOrDeleteRoom :: PlayerWithRef -> String -> Effect Unit
     doLeaveOrDeleteRoom player roomId = launchAff_ do
-      eiResult :: Either FbErr Unit <- leaveOrDeleteRoom env.fb roomId (removeRef player)
+      eiResult :: Either FbErr Unit <- leaveOrDeleteRoom env.fb roomId myId
       liftEffect $ case eiResult of
         Left e -> errorPu $ Just $ show e
         Right _ -> navigate $ Route.Debug

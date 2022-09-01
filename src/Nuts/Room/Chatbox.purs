@@ -2,28 +2,29 @@ module Nuts.Room.Chatbox where
 
 import Prelude
 
+import App.Env (AppEvent(..))
 import Control.Alt ((<|>))
 import Core.Room.RoomManager (sendMessage)
 import Data.DateTime.Instant (instant, toDateTime)
-import Data.Either (Either(..), hush)
+import Data.Either (either, hush)
 import Data.Formatter.DateTime (format, parseFormatString)
 import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
-import Deku.Control (dyn, text, text_)
-import Deku.Core (Nut, bussed, insert_)
+import Deku.Control (text, text_)
+import Deku.Core (Nut, bussed)
 import Deku.DOM as D
 import Deku.Do as Doku
 import Deku.Listeners (textInput)
-import Models.Models (ChatMessage)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Nuts.Room.RoomEnv (RoomEnv)
-import Paraglider.Operator.Combine (combineLatest)
-import Platform.Deku.Html (bangCss, bangCss', css, enterUp)
+import Nuts.Room.Scrollchat (scrollChat)
+import Platform.Deku.Html (bangCss, bangCss', bangId, css, enterUp)
 import Platform.Deku.Misc (dynDiffOnlyAddition, useMemoBeh')
 
 nut :: RoomEnv ->  Nut
@@ -34,22 +35,25 @@ nut {env, chatEv, playersEv, roomId} = Doku.do
       , css "scrollbar-track-rounded-full scrollbar-thumb-gray-900 scrollbar-track-gray-800"
       , css "first:pt-6 shadow-md px-3"
       ]
+    chatAttrs = chatCss <|> bangId "chatbox"
+
   playerNamesEv <- useMemoBeh'
-    (Map.fromFoldable <<< map (\{name, userId} -> Tuple userId name) <$> playersEv)
+    (Map.fromFoldable <<< map (\{name, id} -> Tuple id name) <$> playersEv)
 
   D.div (bangCss "flex flex-col h-full grow")
-    [ dynDiffOnlyAddition D.div chatCss (mkMessageRow playerNamesEv) chatEv
+    [ dynDiffOnlyAddition D.div chatAttrs (mkMessageRow playerNamesEv) chatEv
     , typeBox
     ]
 
   where
   typeBox :: Nut
-  typeBox = bussed \pushInputVal inputValEv -> bussed \pushClear clearEv -> bussed \pushErr errEv ->
+  typeBox = bussed \pushInputVal inputValEv -> bussed \pushClear clearEv ->
     let
-      onMessageSent (Left e) = pushErr $ show e
-      onMessageSent _ = pure unit
-      errElem = (\e -> pure $ insert_ $ text_ e) <$> errEv
-      pushTextGo text = sendMessage env roomId text onMessageSent *> pushClear unit
+      pushTextGo text = launchAff_ do
+        eiErrorRef <- sendMessage env roomId text
+        liftEffect $ either (env.appPush <<< ShowAppError <<< show) (const $ pure unit) eiErrorRef
+        liftEffect $ pushClear unit
+        liftEffect $ scrollChat
       pushMessageTextEv = pushTextGo <$> inputValEv
     in
       D.div (bangCss "flex mt-4 mb-6 px-3 w-full")
@@ -60,7 +64,6 @@ nut {env, chatEv, playersEv, roomId} = Doku.do
                 <|> ((\_ -> D.Value := "") <$> clearEv)
             )
         , Btn.gray "Send" (css "px-8") pushMessageTextEv
-        , dyn D.div (bangCss "text-red-500") errElem
         ]
 
   dateText :: Number -> String

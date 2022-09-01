@@ -46,15 +46,11 @@ nut { env: {fb, self, appPush}, playersEv, roomId, roomEv } =
   hasEnoughPlayers players = length players > 1
   canStartText can = if can then "Click to Start the game" else "Need more players to start"
 
-  nonAdminHiddenCss {admin} = if (admin /= myId) then css "hidden" else ""
-  adminHiddenCss {admin} = if (admin == myId) then css "hidden" else ""
+  nonAdminHiddenCss {id} = if (id /= myId) then css "hidden" else ""
+  adminHiddenCss {id} = if (id == myId) then css "hidden" else ""
 
   doLeaveOrDeleteRoom players = launchAff_ do
-    eiResult <- runExceptT do
-      player <- liftEither
-        $ note (DocNotFound "Missing self player")
-          $ find (\{userId} -> myId == userId) players
-      liftSuccess $ leaveOrDeleteRoom fb roomId player
+    eiResult <- leaveOrDeleteRoom fb roomId myId
     liftEffect $ case eiResult of
       Left e -> appPush $ ShowAppError $ show e
       Right _ -> navigate $ Route.Landing
