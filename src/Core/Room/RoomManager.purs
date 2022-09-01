@@ -8,7 +8,7 @@ import Control.Monad.Except (lift, runExceptT)
 import Data.Array (head)
 import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
-import Data.Either (Either, note)
+import Data.Either (Either)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.String (toLower)
@@ -17,13 +17,11 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
-import FRP.Event (ZoraEvent)
-import Models.Models (class Subset, Chat, ChatMessage, ChatMessageIn, GameState(..), Player, PlayerId, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, Game)
+import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
-import Platform.Firebase.FbErr (FbErr(..))
+import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore.DocRef (DocRef)
-import Platform.Firebase.Firestore.DocRef as DocRef
 import Platform.Firebase.Firestore.QL as QL
 import Platform.Firebase.Firestore.Query (Direction(..))
 import Platform.Firebase.Firestore.Read (getDoc, queryDocs)
@@ -41,7 +39,7 @@ roomPath = "rooms"
 chatPath :: RoomId -> String
 chatPath roomId = "rooms/" <> roomId <> "/messages"
 
-observeRoom :: FirebaseEnv -> RoomId -> FbEvent Room
+observeRoom :: FirebaseEnv -> RoomId -> FbEvent (Maybe Room)
 observeRoom fb id = docEvent fb.db roomPath id
 
 getRoom :: FirebaseEnv -> RoomId -> Aff (Either FbErr (Maybe Room))

@@ -3,6 +3,7 @@ module Platform.FRP.FirebaseFRP where
 import Prelude
 
 import App.Env (FbEvent)
+import Data.Maybe (Maybe)
 import FRP.Event (makeEvent)
 import Paraglider.Operator.FromAff (fromAff)
 import Platform.Firebase.Firestore.Common (Firestore)
@@ -18,8 +19,8 @@ docEvent
    => Firestore
    -> String
    -> String
-   -> FbEvent a
-docEvent fs path id = makeEvent \dsPush -> observeDoc fs path id dsPush (pure unit)
+   -> FbEvent (Maybe a)
+docEvent fs path id = makeEvent \dsPush -> observeDoc fs path id dsPush
 
 collectionEvent
   :: ∀ a

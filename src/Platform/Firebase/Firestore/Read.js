@@ -39,7 +39,7 @@ export function queryDocs_(db, queryDesc) {
 }
 
 const docObserversByPath = {}
-export function observeDoc_(db, path, id, onNext, onError, onEmpty, onCompleteEffect) {
+export function observeDoc_(db, path, id, onNext, onError, nothing, just) {
   console.log(`observeDoc_. path:${path}, id:${id}`);
   const combinedPath = path + id
   const currentObservers = docObserversByPath[combinedPath] || 0;
@@ -52,12 +52,12 @@ export function observeDoc_(db, path, id, onNext, onError, onEmpty, onCompleteEf
 		(d) => {
       try {
         console.log(`onNext doc. path:${path} id:${id} ${d}`);
-        const toPublish = d.data();
-        if (toPublish) {
+        if (d.exists()) {
+          const toPublish = d.data();
           toPublish.id = id
-          onNext(toPublish)();
+          onNext(just(toPublish))();
         } else {
-          onEmpty()
+          onNext(nothing)
         }
       } catch (e) {
         const errorStr = `Error1 in observeDoc_. code:${e.code}. msg:${e.message}`

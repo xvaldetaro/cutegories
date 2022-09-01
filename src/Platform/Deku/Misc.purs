@@ -22,13 +22,14 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class.Console (log)
 import FRP.Event (AnEvent, ZoraEvent, Event, filterMap, fromEvent, keepLatest, mapAccum, memoize, toEvent, withLast)
-import Hyrule.Zora (Zora)
+import Hyrule.Zora (Zora, liftImpure)
 import Paraglider.Operator.DiffAccum (diffAccum)
 import Paraglider.Operator.DoOnNext as Paraglider
 import Paraglider.Operator.DoOnSubscribe (doOnSubscribe)
 import Paraglider.Operator.DoOnUnsubscribe (doOnUnsubscribe)
 import Paraglider.Operator.DrainLeft (drainLeft)
 import Paraglider.Operator.FromAff (fromAff)
+import Paraglider.Operator.MapEffectful (mapEffectful)
 import Paraglider.Operator.MemoBeh (memoBeh, memoBeh')
 import Paraglider.Operator.Replay (replay, replayRefCount)
 import Paraglider.Operator.SwitchMap (switchMap)
@@ -126,6 +127,15 @@ dynDiffOnlyAddition elem attrs render upstr = dyn elem attrs rowsEv
 
   rowsEv :: ZoraEvent (ZoraEvent (Bolson.Child _ _ Zora _))
   rowsEv = mkRow <$> newItemsUnfoldedEv
+
+logE :: ∀ a. (a -> String) -> ZoraEvent a -> ZoraEvent a
+logE f e = mapEffectful (\a -> (log' $ f a) *> pure a) e
+  where
+  log' :: String -> Zora Unit
+  log' = liftImpure <<< log
+
+logE' :: ∀ a. Show a => ZoraEvent a -> ZoraEvent a
+logE' = logE show
 
 wrapLogs :: ∀ a. String -> String -> ZoraEvent a -> ZoraEvent a
 wrapLogs onSub onUnsub e =

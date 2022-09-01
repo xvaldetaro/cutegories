@@ -4,7 +4,8 @@ import Prelude
 
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (Reader)
-import Data.Either (Either)
+import Data.Either (Either, note)
+import Data.Maybe (Maybe)
 import Deku.Core (Nut)
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -14,7 +15,7 @@ import FRP.Event (ZoraEvent, Event, create, fromEvent)
 import Hyrule.Zora (Zora, liftImpure)
 import Paraglider.Operator.ToAff (toAff)
 import Platform.Firebase.Auth (User, authStateChangedEventWithAnonymousAccountCreation)
-import Platform.Firebase.FbErr (FbErr)
+import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
 import Platform.Util.ErrorHandling (liftSuccess)
 
@@ -36,6 +37,9 @@ type Env =
 type AppNut = Reader Env Nut
 
 type FbEvent a = Event (Either FbErr a)
+
+forceDocPresent :: ∀ a. Either FbErr (Maybe a) -> Either FbErr a
+forceDocPresent  eiMbRoom = eiMbRoom >>= note (DocNotFound "room")
 
 mapFbEvent :: ∀ a b. (a -> b) -> FbEvent a -> FbEvent b
 mapFbEvent f ev = map f <$> ev

@@ -9,7 +9,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Aff (Aff, try)
-import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn5, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn5, runEffectFn7)
+import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn5, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn5, runEffectFn6, runEffectFn7)
 import Foreign (Foreign)
 import Platform.Firebase.Config (FirebaseApp)
 import Platform.Firebase.FbErr (FbErr(..), mapFbErr, mkErr)
@@ -42,17 +42,15 @@ queryDocs fs query = parseDocResult ("getDocs:" <> query.path) <$> jsF
     eiErrorDocs <- try $ toAffE $ (runEffectFn2 queryDocs_) fs (toJs query)
     pure $ mapFbErr ("getDocsF:" <> query.path)  eiErrorDocs
 
--- params: db path id onNext onError onCompleteEffect
--- returns Disposable effect
 foreign import observeDoc_
   :: EffectFn7
        Firestore
        String
        String
-       (Foreign -> Effect Unit) -- onNext
+       (Maybe Foreign -> Effect Unit) -- onNext
        (String -> Effect Unit) -- onError
-       (Effect Unit) -- onEmpty
-       (Effect Unit) -- onComplete
+       (∀ a. Maybe a) -- Nothing
+       (∀ a. a -> Maybe a) -- Just
        (Effect Unit)
 
 observeDoc
@@ -61,15 +59,22 @@ observeDoc
   => Firestore
   -> String
   -> String
-  -> (Either FbErr a -> Effect Unit)
-  -> Effect Unit
+  -> (Either FbErr (Maybe a) -> Effect Unit)
   -> Effect (Effect Unit)
-observeDoc fs path id onNext onComplete = jsF fs path id onNext' onError onEmpty onComplete
+observeDoc fs path id onNext = jsF fs path id onNext' onError Nothing Just
   where
   callsite = "observeDoc:" <> path <> "/" <> id
-  onNext' = JSON.read >>> mapFbErr callsite >>> onNext
+  onNext' :: Maybe Foreign -> Effect Unit
+  onNext' mbForeign =
+    let
+      toEmit :: Either FbErr (Maybe a)
+      toEmit =
+        case mbForeign of
+          Nothing -> pure Nothing
+          Just a -> mapFbErr callsite $ JSON.read a
+    in
+    onNext toEmit
   onError = mkErr callsite >>> Left >>> onNext
-  onEmpty = onNext $ Left $ DocNotFound callsite
   jsF = (runEffectFn7 observeDoc_)
 
 -- params: db path id onNext onError onCompleteEffect
