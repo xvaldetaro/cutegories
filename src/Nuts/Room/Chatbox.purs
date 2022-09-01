@@ -56,7 +56,6 @@ nut {env, chatEv, playersEv, roomId} = Doku.do
 
     onChatSelf e = pushChatboxElem e *> scrollDownChat e
 
-
     mkMessageRow playerNamesEv { ts, sender, text: msgText } =
       let playerNameEv = playerNamesEv <#> \nameDict -> fromMaybe "" $ Map.lookup sender nameDict in
       D.div (bangCss "p-2 w-full justify-between ")
@@ -72,7 +71,7 @@ nut {env, chatEv, playersEv, roomId} = Doku.do
       let
         pushTextGo chatboxSelf text = launchAff_ do
           eiErrorRef <- sendMessage env roomId text
-          liftEffect $ either (env.appPush <<< ShowAppError <<< show) (const $ pure unit) eiErrorRef
+          liftEffect $ either env.errPush (const $ pure unit) eiErrorRef
           liftEffect $ pushClear unit
           liftEffect $ scrollDownChat chatboxSelf
         pushMessageTextEv = combineLatest pushTextGo chatboxElemEv inputValEv

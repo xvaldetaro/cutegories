@@ -2,15 +2,12 @@ module Nuts.Room.RoomLeftBar where
 
 import Prelude
 
-import App.Env (AppEvent(..))
 import App.Navigation (navigate)
 import App.Route as Route
 import Control.Alt ((<|>))
-import Control.Monad.Error.Class (liftEither)
-import Control.Monad.Except (lift, runExceptT)
-import Core.Room.RoomManager (getPlayerForUser, leaveOrDeleteRoom, rmPlayerFromRoom, sendMessage)
-import Data.Array (find, length)
-import Data.Either (Either(..), note)
+import Core.Room.RoomManager (leaveOrDeleteRoom)
+import Data.Array (length)
+import Data.Either (Either(..))
 import Data.Newtype (unwrap)
 import Deku.Control (text, text_)
 import Deku.Core (Nut)
@@ -19,16 +16,12 @@ import Deku.Listeners (click)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import FRP.Event (toEvent)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Room.RoomEnv (RoomEnv)
-import Paraglider.Operator.ToAff (toAff)
 import Platform.Deku.Html (bangCss, combineCss, css)
-import Platform.Firebase.FbErr (FbErr(..))
-import Platform.Util.ErrorHandling (liftSuccess)
 
 nut :: RoomEnv -> Nut
-nut { env: {fb, self, appPush}, playersEv, roomId, roomEv } =
+nut { env: {fb, self, errPush}, playersEv, roomId, roomEv } =
   D.div (bangCss "bg-gray-800 w-64 flex px-3 flex-col")
     [ D.div_ [ text_ $ "Room #: " <> roomId ]
     , adminControls
@@ -52,7 +45,7 @@ nut { env: {fb, self, appPush}, playersEv, roomId, roomEv } =
   doLeaveOrDeleteRoom players = launchAff_ do
     eiResult <- leaveOrDeleteRoom fb roomId myId
     liftEffect $ case eiResult of
-      Left e -> appPush $ ShowAppError $ show e
+      Left e -> errPush e
       Right _ -> navigate $ Route.Landing
 
   doLeaveOrDeleteRoomEv = doLeaveOrDeleteRoom <$> playersEv

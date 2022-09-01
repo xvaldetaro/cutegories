@@ -3,9 +3,9 @@ module Platform.FRP.FirebaseFRP where
 import Prelude
 
 import App.Env (FbEvent)
-import FRP.Event (fromEvent, makeEvent)
+import FRP.Event (makeEvent)
 import Paraglider.Operator.FromAff (fromAff)
-import Platform.Firebase.Firestore.Common (Firestore, DocumentReference)
+import Platform.Firebase.Firestore.Common (Firestore)
 import Platform.Firebase.Firestore.DocRef (DocRef)
 import Platform.Firebase.Firestore.Query (Query)
 import Platform.Firebase.Firestore.Read (observeDoc, observeQueryCollection)
@@ -19,7 +19,7 @@ docEvent
    -> String
    -> String
    -> FbEvent a
-docEvent fs path id = fromEvent $ makeEvent \dsPush -> observeDoc fs path id dsPush (pure unit)
+docEvent fs path id = makeEvent \dsPush -> observeDoc fs path id dsPush (pure unit)
 
 collectionEvent
   :: ∀ a
@@ -27,7 +27,7 @@ collectionEvent
    => Firestore
    -> Query
    -> FbEvent (Array a)
-collectionEvent fs query = fromEvent $ makeEvent \dsPush ->
+collectionEvent fs query = makeEvent \dsPush ->
   observeQueryCollection fs query dsPush
 
 addDocEvent
@@ -37,4 +37,4 @@ addDocEvent
    -> String
    -> a
    -> FbEvent DocRef
-addDocEvent fs path x = fromEvent <<< fromAff $ addDoc fs path x
+addDocEvent fs path x = fromAff $ addDoc fs path x

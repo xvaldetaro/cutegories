@@ -9,7 +9,7 @@ import Data.Array (head)
 import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
 import Data.Either (Either, note)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Traversable (sequence, traverse)
@@ -18,7 +18,7 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
 import FRP.Event (ZoraEvent)
-import Models.Models (Chat, ChatMessage, ChatMessageIn, GameState(..), Player, PlayerId, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId)
+import Models.Models (class Subset, Chat, ChatMessage, ChatMessageIn, GameState(..), Player, PlayerId, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, Game)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -27,7 +27,7 @@ import Platform.Firebase.Firestore.DocRef as DocRef
 import Platform.Firebase.Firestore.QL as QL
 import Platform.Firebase.Firestore.Query (Direction(..))
 import Platform.Firebase.Firestore.Read (getDoc, queryDocs)
-import Platform.Firebase.Firestore.Write (addDoc, deleteDoc, setDoc)
+import Platform.Firebase.Firestore.Write (ArrayOp(..), ArrayUpdate, addDoc, deleteDoc, setDoc, updateDoc)
 import Platform.Util.ErrorHandling (liftSuccess)
 import Record as Record
 import Type.Proxy (Proxy(..))
@@ -71,12 +71,24 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
+decideWinner :: FirebaseEnv -> RoomId -> UserId -> Aff (Either FbErr Unit)
+decideWinner fb roomId userId = updateDoc fb.db roomPath roomId patch [au]
+  where
+  patch = {gameEndSnapshot: Nothing :: Maybe Game}
+  au = { field: "scores", op: ArrayUnion, elements: [userId]}
+
+setGameEndSnapshot :: FirebaseEnv -> RoomId -> Game -> Aff (Either FbErr Unit)
+setGameEndSnapshot fb roomId game = updateDoc fb.db roomPath roomId patch arr
+  where
+  patch = {gameEndSnapshot: Just game}
+  (arr :: Array (ArrayUpdate String)) = []
+
 createRoom :: Env -> String -> String -> Aff (Either FbErr Unit)
 createRoom { fb, self } myName title =
   let
     self' = unwrap self
     myId = self'.uid
-    (room :: RoomIn ()) = { title, gameState: NeverStarted }
+    (room :: RoomIn ()) = { title, scores: [], gameEndSnapshot: Nothing }
   in
   runExceptT do
     liftSuccess $ setDoc fb.db roomPath myId room
@@ -117,16 +129,12 @@ deleteMessages fb roomId = runExceptT do
 rmPlayerFromRoom :: FirebaseEnv -> RoomId -> UserId -> Aff (Either FbErr Unit)
 rmPlayerFromRoom fb roomId userId = deleteDoc fb.db (playersPath roomId) userId
 
-observeChat :: FirebaseEnv -> RoomId -> ZoraEvent (Either FbErr Chat)
+observeChat :: FirebaseEnv -> RoomId -> FbEvent Chat
 observeChat fb roomId = collectionEvent fb.db q
   where
   q = QL.collection (chatPath roomId) [QL.orderByField "ts" Asc]
 
-sendMessage
-  :: Env
-  -> RoomId
-  -> String
-  -> Aff (Either FbErr DocRef)
+sendMessage :: Env -> RoomId -> String -> Aff (Either FbErr DocRef)
 sendMessage { fb, self } roomId text = do
   chatMessage <- liftEffect mkMessage
   addDoc fb.db (chatPath roomId) chatMessage

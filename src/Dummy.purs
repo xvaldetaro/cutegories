@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Except (lift, runExceptT)
 import Data.Formatter.DateTime (format, parseFormatString)
 import Data.Int (floor)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Effect.Now (nowDateTime)
@@ -14,6 +15,7 @@ import Paraglider.Operator.DiffAccum (diffAccum)
 import Platform.Firebase.Firestore.Query as Query
 import Platform.Util.ErrorHandling (liftEither')
 import Simple.JSON (unsafeStringify)
+import Simple.JSON as JSON
 
 
 -- class Cons "id" String (tail :: Row String) (a :: Row String) <=  R' a where
@@ -33,10 +35,12 @@ b :: String -> String
 b s = s <> "asfd"
 
 main :: Effect Unit
-main = void $ runExceptT do
-  f <- liftEither' (const unit) $ parseFormatString "MM/DD/YY - hh:m a"
-  now <- lift nowDateTime
-  lift $ log $ format f now
+main = do
+  let (x :: {a :: Maybe Number, b :: Maybe String}) =  {a : Nothing, b : Just "asdf"}
+  log $ unsafeStringify $ JSON.writeImpl x
+  -- f <- liftEither' (const unit) $ parseFormatString "MM/DD/YY - hh:m a"
+  -- now <- lift nowDateTime
+  -- lift $ log $ format f now
   -- let cs = [ Where DocId In (Multiple ["asd", "ddd"])
   --           , Where (Field "myField") Equals (Single "sss"), OrderBy (Field "field2") Asc]
   -- let a = {qtype: Collection, path: "asdfasdf/", clauses: cs}

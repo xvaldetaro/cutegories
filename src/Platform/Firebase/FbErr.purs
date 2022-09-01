@@ -10,6 +10,7 @@ import Data.Show.Generic (genericShow)
 data FbErr
   = Basic String
   | DocNotFound String
+  | Unauthorized String
 
 derive instance genericFbErr :: Generic FbErr _
 instance showFbErr :: Show FbErr where

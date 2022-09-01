@@ -7,6 +7,7 @@ module Platform.Firebase.Auth
   , MultiFactorUser
   , MultiFactorInfo
   , UserInfo
+  , uid
   ) where
 
 import Prelude
@@ -64,6 +65,9 @@ newtype User = User
   , tenantId :: Maybe String
   , uid :: String
   }
+
+uid :: User -> String
+uid (User {uid}) = uid
 
 derive instance Newtype User _
 derive newtype instance JSON.ReadForeign User

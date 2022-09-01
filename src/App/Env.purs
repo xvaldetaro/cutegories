@@ -10,7 +10,8 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import FRP.Event (ZoraEvent, create, fromEvent)
+import FRP.Event (ZoraEvent, Event, create, fromEvent)
+import Hyrule.Zora (Zora, liftImpure)
 import Paraglider.Operator.ToAff (toAff)
 import Platform.Firebase.Auth (User, authStateChangedEventWithAnonymousAccountCreation)
 import Platform.Firebase.FbErr (FbErr)
@@ -26,12 +27,15 @@ type Env =
 
   -- App Bus
   , appEvent :: ZoraEvent AppEvent
-  , appPush :: AppEvent -> Effect Unit
+
+  -- Ez helper stuff
+  , errPush :: FbErr -> Effect Unit
+  , zerrPush :: FbErr -> Zora Unit
   }
 
 type AppNut = Reader Env Nut
 
-type FbEvent a = ZoraEvent (Either FbErr a)
+type FbEvent a = Event (Either FbErr a)
 
 mapFbEvent :: ∀ a b. (a -> b) -> FbEvent a -> FbEvent b
 mapFbEvent f ev = map f <$> ev
@@ -42,4 +46,11 @@ mkEnv = runExceptT do
   self <- liftSuccess $ toAff $ authStateChangedEventWithAnonymousAccountCreation fb.auth
   {push, event} <- liftEffect $ create
   log $ "Loaded env. User: " <> show self
-  pure {fb, self, appPush: push, appEvent: fromEvent event }
+
+  let
+    errPush e = do
+      let s = show e
+      log $ "Error pushed" <> s
+      push $ ShowAppError s
+    zerrPush = errPush >>> liftImpure
+  pure {fb, self, errPush, zerrPush, appEvent: fromEvent event }

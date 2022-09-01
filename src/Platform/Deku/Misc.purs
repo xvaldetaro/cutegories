@@ -2,12 +2,14 @@ module Platform.Deku.Misc where
 
 import Prelude
 
+import App.Env (Env, FbEvent)
 import Bolson.Core (Entity, envy)
 import Bolson.Core as Bolson
 import Control.Alt ((<|>))
 import Control.Monad.ST.Class (class MonadST)
 import Data.Array (drop, length, mapWithIndex)
 import Data.Array as Array
+import Data.Either (Either)
 import Data.Foldable (oneOfMap)
 import Data.Map (Map)
 import Data.Map as Map
@@ -19,17 +21,19 @@ import Deku.Core (Domable, insert, insert_, remove)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class.Console (log)
-import FRP.Event (AnEvent, ZoraEvent, filterMap, fromEvent, keepLatest, mapAccum, memoize, toEvent, withLast)
+import FRP.Event (AnEvent, ZoraEvent, Event, filterMap, fromEvent, keepLatest, mapAccum, memoize, toEvent, withLast)
 import Hyrule.Zora (Zora)
 import Paraglider.Operator.DiffAccum (diffAccum)
 import Paraglider.Operator.DoOnNext as Paraglider
 import Paraglider.Operator.DoOnSubscribe (doOnSubscribe)
 import Paraglider.Operator.DoOnUnsubscribe (doOnUnsubscribe)
+import Paraglider.Operator.DrainLeft (drainLeft)
 import Paraglider.Operator.FromAff (fromAff)
-import Paraglider.Operator.MemoBeh (memoBeh')
+import Paraglider.Operator.MemoBeh (memoBeh, memoBeh')
 import Paraglider.Operator.Replay (replay, replayRefCount)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.ToClosure (toClosure)
+import Platform.Firebase.FbErr (FbErr)
 
 type Continuation m logic obj lock a =
   (a -> Bolson.Entity logic obj m lock) -> Bolson.Entity logic obj m lock
@@ -148,6 +152,17 @@ useMemoBeh'
   -> (AnEvent m a -> Entity t121 t122 m t124)
   -> Entity t121 t122 m t124
 useMemoBeh' ev = envy <<< (memoBeh' ev)
+
+-- | Applies MemoBeh' so that emissions from the FB event are cached and replayed for subsequent
+-- | subscribers. Drains FbErr and pushes them to Env so that they are displayed
+useCleanFbEvent
+  :: forall a t112 t113 t115
+  . Env
+  -> Event (Either FbErr a)
+  -> (AnEvent Zora a -> Entity t112 t113 Zora t115)
+  -> Entity t112 t113 Zora t115
+useCleanFbEvent { zerrPush } ev cont = envy $ memoBeh' (fromEvent ev) \mEv -> envy
+  (drainLeft zerrPush mEv \dEv -> cont dEv)
 
 envyAffResult
   :: forall a t112 t113 t115
