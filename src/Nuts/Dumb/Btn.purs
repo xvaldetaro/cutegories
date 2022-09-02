@@ -12,6 +12,10 @@ import Effect (Effect)
 import FRP.Event (ZoraEvent)
 import Platform.Deku.Html (bangCss, css)
 
+red :: String -> String -> ZoraEvent (Effect Unit) -> Nut
+red text extraCss onClick =
+  D.button ((click onClick) <|> bangCss (baseCss <> redCss <> extraCss)) [text_ text]
+
 teal :: String -> String -> ZoraEvent (Effect Unit) -> Nut
 teal text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> tealCss <> extraCss)) [text_ text]
@@ -19,6 +23,9 @@ teal text extraCss onClick =
 gray :: String -> String -> ZoraEvent (Effect Unit) -> Nut
 gray text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> grayCss <> extraCss)) [text_ text]
+
+redCss :: String
+redCss = css "bg-red-700 hover:bg-red-600 active:bg-red-200"
 
 tealCss :: String
 tealCss = css "bg-teal-600 hover:bg-teal-500 active:bg-green-200"

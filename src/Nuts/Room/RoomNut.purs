@@ -3,55 +3,71 @@ module Nuts.Room.RoomNut where
 import Prelude
 
 import App.Env (Env, forceDocPresent)
+import App.Navigation (navigate)
+import App.Route as Route
 import Control.Alt ((<|>))
-import Core.Room.RoomManager (getRoom, observeChat, observeRoom, observeRoomPlayers)
-import Data.Either (Either, note)
+import Core.Room.GameManager (observeGame)
+import Core.Room.RoomManager (observeChat, observeRoom, observeRoomPlayers)
+import Data.Array (find)
+import Data.Either (Either(..))
 import Data.Filterable (filterMap)
 import Data.Maybe (Maybe(..))
-import Deku.Control (dyn, text_)
-import Deku.Core (Nut, insert_, remove)
+import Data.Tuple (Tuple(..))
+import Deku.Control (switcher, text_)
+import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
-import Models.Models (RoomId, Room)
-import Nuts.Room.Chatbox as Chatbox
+import Hyrule.Zora (liftImpure)
+import Models.Models (GameState(..), RoomId)
+import Nuts.Game.GameNut as GameNut
+import Nuts.Room.RoomChat as RoomChat
 import Nuts.Room.RoomLeftBar as RoomLeftBar
 import Nuts.Room.RoomRightBar as RoomRightBar
-import Paraglider.Operator.FromAff (fromAff)
+import Paraglider.Operator.Combine (combineLatest)
+import Paraglider.Operator.DoOnNext (doOnNext)
 import Platform.Deku.Html (bangCss)
-import Platform.Deku.Misc (logE, logE', useCleanFbEvent)
-import Platform.FRP.Led (loadingEvent)
-import Platform.Firebase.FbErr (FbErr(..))
+import Platform.Deku.Misc (useCleanFbEvent)
+import Platform.FRP.Led (initialIfAsync)
+import Platform.Firebase.Auth (uid)
 
 nut :: Env -> RoomId -> Nut
-nut env@{ fb } roomId = Doku.do
-  roomObsEv <- useCleanFbEvent env $ forceDocPresent <$> observeRoom fb roomId
-  playersObsEv <- useCleanFbEvent env $ observeRoomPlayers fb roomId
-  chatObsEv <- useCleanFbEvent env $ observeChat fb roomId
+nut env@{ fb, self } roomId = Doku.do
+  roomEv <- useCleanFbEvent env $ forceDocPresent <$> observeRoom fb roomId
+  playersEv' <- useCleanFbEvent env $ observeRoomPlayers fb roomId
+  chatEv <- useCleanFbEvent env $ observeChat fb roomId
+  gameEv <- useCleanFbEvent env $ forceDocPresent <$> observeGame fb roomId
 
   let
+    playersEv = playersEv' # doOnNext \players -> case find (\{id} -> id == uid self) players of
+      Nothing -> liftImpure $ navigate $ Route.Landing
+      Just _ -> pure unit
+
     roomEnv =
       { env
       , roomId
-      , roomEv: roomObsEv
-      , playersEv: playersObsEv
-      , chatEv: chatObsEv
+      , roomEv: roomEv
+      , playersEv: playersEv
+      , chatEv: chatEv
       }
-    loadingEv = loadingEvent $ roomObsEv *> playersObsEv *> chatObsEv
 
-    happy =
+    roomPage =
       D.div (bangCss "flex h-full items-stretch")
         [ RoomLeftBar.nut roomEnv
-        , Chatbox.nut roomEnv
+        , RoomChat.nut roomEnv
         , RoomRightBar.nut roomEnv
         ]
 
-    dynEvent = loadingEv <#> \isLoading -> if isLoading
-      then
-        (pure $ insert_ loadingDiv)
-          <|> (loadingEv # filterMap \isLoading' -> if isLoading' then Nothing else Just remove)
-      else (pure $ insert_ happy)
+    gameEnv = { env, roomId, roomEv, gameEv }
+    gamePage = GameNut.nut gameEnv
 
-  dyn D.div (bangCss "h-full") dynEvent
+    loadingOrDataEv = initialIfAsync Nothing $ Just <$> roomEv
+
+  (combineLatest Tuple loadingOrDataEv gameEv) # switcher D.div (bangCss "h-full items-center justify-center") case _ of
+    Tuple Nothing _ -> loadingDiv
+    Tuple _ game -> case game.gameState of
+      NotStarted -> roomPage
+      Started -> gamePage
+      Results -> gamePage
 
   where
   loadingDiv = D.div_ [text_ "Loading..."]

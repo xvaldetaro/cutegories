@@ -27,14 +27,14 @@ removeRef :: forall r154 a57.
                       -> Record r154
 removeRef = Record.delete (Proxy :: _ "ref")
 
+class Subset :: forall k1 k2. k1 -> k2 -> Constraint
 class Subset i o
 instance Union i x o => Subset (Record i) (Record o)
 
-data GameState = NotCreated | NotStarted | Started | Results | Ended
+data GameState = NotStarted | Started | Results
 type RoomIn r =
   { title :: String
   , scores :: Array UserId
-  , gameEndSnapshot :: Maybe Game
   | r
   }
 type RoomId = String
@@ -47,7 +47,20 @@ type ChatMessage = ChatMessageIn (id :: ChatMessageId)
 type Chat = Array ChatMessage
 
 type Guess = { userId :: UserId, text :: String }
-type Game = { topic :: String, guesses :: Array Guess }
+type Guesses = { guesses :: Array Guess }
+blankGuesses :: Guesses
+blankGuesses = {guesses: []}
+
+type Game =
+  { topic :: String
+  , ready :: Array String
+  , endGuesses :: Array Guess
+  , endsAt :: Number
+  , gameState :: GameState
+  , id :: String
+  }
+blankGame :: String -> Game
+blankGame id = {topic: "", endGuesses: [], gameState: NotStarted, ready: [], id, endsAt: 0.0}
 
 --
 
@@ -58,11 +71,9 @@ instance readForeignGameState :: ReadForeign GameState where
   readImpl fo = do
     str <- readString fo
     case str of
-      "NotCreated" -> pure NotCreated
       "NotStarted" -> pure NotStarted
       "Started" -> pure Started
       "Results" -> pure Results
-      "Ended" -> pure Ended
       x -> throwError $ pure $ TypeMismatch x "GameState"
 
 instance writeForeignGameState :: WriteForeign GameState where

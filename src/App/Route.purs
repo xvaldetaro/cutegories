@@ -11,7 +11,6 @@ import Routing.Duplex.Generic.Syntax ((/))
 data Route
   = Landing
   | Room String
-  | Game String
   | Debug
   -- Debug Learning Routes
   | PlaygroundDummy
@@ -29,7 +28,6 @@ routeCodec :: RouteDuplex' Route
 routeCodec = root $ sum
   { "Landing": noArgs
   , "Room": "roomId" / segment
-  , "Game": "gameId" / segment
   , "Debug": "debug" / noArgs
   -- Debug Learning Routes
   , "PlaygroundDummy": "playgrounddummy" / noArgs

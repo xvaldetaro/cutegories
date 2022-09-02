@@ -15,9 +15,12 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..), fst)
+import Data.Tuple.Nested (type (/\), (/\))
 import Deku.Attribute (Attribute)
 import Deku.Control (dyn)
 import Deku.Core (Domable, insert, insert_, remove)
+import Deku.Do (useState')
+import Deku.Do as Doku
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class.Console (log)
@@ -173,6 +176,14 @@ useCleanFbEvent
   -> Entity t112 t113 Zora t115
 useCleanFbEvent { zerrPush } ev cont = envy $ memoBeh' (fromEvent ev) \mEv -> envy
   (drainLeft zerrPush mEv \dEv -> cont dEv)
+
+useStatefulDom :: ∀ l p a
+  . ((a -> Effect Unit) -> ZoraEvent a -> Domable l p)
+  -> ((Domable l p /\ ZoraEvent a) -> Domable l p)
+  -> Domable l p
+useStatefulDom getDom cont = Doku.do
+  p /\ e <- useState'
+  cont $ (getDom p e) /\ e
 
 envyAffResult
   :: forall a t112 t113 t115

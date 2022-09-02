@@ -12,12 +12,13 @@ import Data.Either (Either)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.String (toLower)
+import Data.Time.Duration (Seconds(..), fromDuration, toDuration)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
-import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId)
+import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, GameState(..), Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, blankGame)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -29,6 +30,10 @@ import Platform.Firebase.Firestore.Write (ArrayOp(..), ArrayUpdate, addDoc, dele
 import Platform.Util.ErrorHandling (liftSuccess)
 import Record as Record
 import Type.Proxy (Proxy(..))
+import Web.HTML.HTMLMediaElement (duration)
+
+gamePath :: String
+gamePath = "games"
 
 playersPath :: RoomId -> String
 playersPath roomId = "rooms/" <> roomId <> "/players"
@@ -86,11 +91,12 @@ createRoom { fb, self } myName title =
   let
     self' = unwrap self
     myId = self'.uid
-    (room :: RoomIn ()) = { title, scores: [], gameEndSnapshot: Nothing }
+    (room :: RoomIn ()) = { title, scores: [] }
   in
   runExceptT do
     liftSuccess $ setDoc fb.db roomPath myId room
     liftSuccess $ addPlayerToRoom fb myId myId {name: myName}
+    liftSuccess $ setDoc fb.db gamePath myId (blankGame myId)
 
 addPlayerToRoom :: FirebaseEnv -> RoomId -> UserId -> PlayerIn () -> Aff (Either FbErr Unit)
 addPlayerToRoom fb roomId userId playerIn = setDoc fb.db (playersPath roomId) userId playerPlusId
@@ -109,6 +115,7 @@ deleteRoom fb roomId = runExceptT do
   liftSuccess $ deleteRoomPlayers fb roomId
   liftSuccess $ deleteMessages fb roomId
   liftSuccess $ deleteDoc fb.db roomPath roomId
+  liftSuccess $ deleteDoc fb.db gamePath roomId
 
 deleteRoomPlayers :: FirebaseEnv -> RoomId -> Aff (Either FbErr Unit)
 deleteRoomPlayers fb roomId = runExceptT do

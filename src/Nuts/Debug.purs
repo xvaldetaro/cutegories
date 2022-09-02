@@ -3,41 +3,34 @@ module Nuts.Debug where
 
 import Prelude
 
-import App.Env (Env)
-import Bolson.Core as BCore
-import Control.Alt ((<|>))
+import Bolson.Core (envy)
 import Control.Plus (empty)
-import Core.Room.RoomManager (addPlayerToRoom, getPlayerForUser, observeChat, observeRoom, observeRoomPlayers, rmPlayerFromRoom)
-import Data.Either (Either)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
 import Data.Tuple.Nested ((/\))
-import Deku.Control (dyn_, text, text_)
-import Deku.Core (Domable, Node, insert_, remove)
+import Deku.Control (switcher, text, text_)
+import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do (useState')
 import Deku.Do as Doku
-import FRP.Event (ZoraEvent, delay, filterMap, fromEvent)
-import Hyrule.Zora (Zora)
-import Models.Models (Chat, Player)
-import Nuts.Dumb.Btn as Btn
-import Paraglider.Operator.FromAff (fromAff)
-import Platform.Deku.Html (bangCss)
-import Platform.Deku.Misc (wrapLogs)
-import Platform.FRP.FirebaseFRP (collectionEvent)
-import Platform.FRP.Led (loadingEvent)
-import Platform.FRP.Wild (WildEvent, unliftHappy)
-import Platform.Firebase.FbErr (FbErr)
-import Record as Record
-import Type.Proxy (Proxy(..))
+import Deku.Listeners (click)
+import Paraglider.Operator.MemoBeh (memoBeh)
 
-nut :: ∀ l p. Env -> Domable l p
-nut env = Doku.do
-  let
-    myId = (_.uid) (unwrap env.self)
-    mbRoomEv = fromEvent $ fromAff $ getPlayerForUser env.fb myId
+nut :: ∀ l p. Domable l p
+nut = Doku.do
+  p /\ e' <- useState'
+  e <- envy <<< memoBeh e' Nothing
 
-  text $ show <<< map (map (Record.delete (Proxy :: _ "ref"))) <$> mbRoomEv
+  e # switcher D.div (empty) case _ of
+    Nothing -> D.div_
+      [ text_ "Nothing"
+      , D.button  (click $ pure $ p $ Just 0) [text_ "To Just 0"]
+      ]
+    Just _ -> D.div_
+      [ D.button  (click $ pure $ p Nothing) [text_ "To Nothing"]
+      , D.button  (click (e <#> \v -> p ((_ + 1) <$> v))) [text_ "Increment"]
+      , text $ show <$> e
+      ]
+  -- text $ show <<< map (map (Record.delete (Proxy :: _ "ref"))) <$> mbRoomEv
   --   aDiv = text_ "aDiv"
   --   bDiv = text_ "bDiv"
   --   bF boolean = if boolean
