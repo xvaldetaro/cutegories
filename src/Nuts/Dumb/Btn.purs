@@ -9,18 +9,18 @@ import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Listeners (click)
 import Effect (Effect)
-import FRP.Event (ZoraEvent)
+import FRP.Event (Event)
 import Platform.Deku.Html (bangCss, css)
 
-red :: String -> String -> ZoraEvent (Effect Unit) -> Nut
+red :: String -> String -> Event (Effect Unit) -> Nut
 red text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> redCss <> extraCss)) [text_ text]
 
-teal :: String -> String -> ZoraEvent (Effect Unit) -> Nut
+teal :: String -> String -> Event (Effect Unit) -> Nut
 teal text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> tealCss <> extraCss)) [text_ text]
 
-gray :: String -> String -> ZoraEvent (Effect Unit) -> Nut
+gray :: String -> String -> Event (Effect Unit) -> Nut
 gray text extraCss onClick =
   D.button ((click onClick) <|> bangCss (baseCss <> grayCss <> extraCss)) [text_ text]
 

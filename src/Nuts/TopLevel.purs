@@ -14,9 +14,8 @@ import Deku.Control (switcher, text, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
-import FRP.Event (filterMap, fromEvent, keepLatest)
+import FRP.Event (filterMap, keepLatest)
 import Nuts.Debug as Debug
-import Nuts.Game.GameNut as GameNut
 import Nuts.Landing (nut) as Landing
 import Nuts.Nav as Nav
 import Nuts.Room.RoomNut as RoomNut
@@ -28,7 +27,7 @@ import Platform.Deku.Misc (envyBurning, wrapLogs)
 nut :: Nut
 nut = Doku.do
   sharedRouteEv <- envyBurning $ wrapLogs "sub" "unsub" routeChangeEvent
-  eiEnvEv <- envyBurning $ fromEvent $ fromAff $ mkEnv
+  eiEnvEv <- envyBurning $ fromAff $ mkEnv
   let
     routeToChild :: Tuple Route Env -> Nut
     routeToChild (Tuple route env) = case route of

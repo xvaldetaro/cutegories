@@ -19,7 +19,7 @@ import Deku.Do (useState')
 import Deku.Do as Doku
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (fold, fromEvent)
+import FRP.Event (fold)
 import FRP.Event.Time (interval)
 import Models.Models (GameState(..))
 import Nuts.Dumb.Btn as Btn
@@ -41,7 +41,7 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv} = Doku.do
       let nowNumber = unwrap $ unInstant nowInstant in
       (toDuration $ Milliseconds (endsAtNumber - nowNumber)) :: Seconds
 
-    mkRemainingTimeEv {endsAt} = remainingTime endsAt <$> (fromEvent $ interval 1000)
+    mkRemainingTimeEv {endsAt} = remainingTime endsAt <$> interval 1000
     remainingSecondsEv = switchMap mkRemainingTimeEv (take 1 gameEv)
 
     doEndGame {id} = launchAff_ $ void $ changeGameState fb id NotStarted

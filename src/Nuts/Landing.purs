@@ -30,16 +30,10 @@ import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Paraglider.Operator.Combine (combineLatest)
 import Platform.Deku.Html (bangCss, combineCss, css, enterUp)
-import Platform.Deku.Misc (envyAffResult)
-import Platform.FRP.Led (errorEvent)
+import Platform.Deku.Misc (envyAffResult, errorEvent)
 import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firestore.DocRef as DocRef
 import Platform.Util.ErrorHandling (liftEither', liftSuccess')
-
-type UIEvents = V
-  ( editJoinRoomInput :: String
-  , error :: Maybe String
-  )
 
 nut :: Env -> Nut
 nut env = Doku.do

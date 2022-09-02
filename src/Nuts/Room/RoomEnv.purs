@@ -2,13 +2,13 @@ module Nuts.Room.RoomEnv where
 
 
 import App.Env (Env)
-import FRP.Event (ZoraEvent)
+import FRP.Event (Event)
 import Models.Models (Chat, Room, Player)
 
 type RoomEnv =
   { env :: Env
   , roomId :: String
-  , roomEv :: ZoraEvent Room
-  , playersEv :: ZoraEvent (Array Player)
-  , chatEv :: ZoraEvent Chat
+  , roomEv :: Event Room
+  , playersEv :: Event (Array Player)
+  , chatEv :: Event Chat
   }

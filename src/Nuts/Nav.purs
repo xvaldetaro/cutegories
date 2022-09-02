@@ -9,11 +9,11 @@ import Deku.Attribute ((:=))
 import Deku.Control (text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
-import FRP.Event (ZoraEvent)
+import FRP.Event (Event)
 import Platform.Deku.Html (bangCss', combineCss, css)
 import Platform.Html.Utils (safeHref)
 
-nut :: ZoraEvent Route -> Nut
+nut :: Event Route -> Nut
 nut currentRouteEv =
   D.div
     ( bangCss'

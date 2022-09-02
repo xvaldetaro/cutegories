@@ -28,7 +28,7 @@ nut {env, chatEv, playersEv, roomId} = Doku.do
 
     mkMessageRow { ts, sender, text: msgText } =
       let playerNameEv = playerNamesEv <#> \nameDict -> fromMaybe "" $ Map.lookup sender nameDict in
-      D.div (bangCss "p-2 w-full justify-between ")
+      D.div (bangCss "p-2 w-full justify-between first:mt-auto")
         [ D.div (bangCss "flex items-baseline")
             [ D.div (bangCss "font-medium text-gray-400 mr-2") [ text playerNameEv ]
             , D.div (bangCss "text-xs font-medium text-gray-400") [ text_ $ dateText ts ]

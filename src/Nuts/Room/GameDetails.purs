@@ -2,33 +2,25 @@ module Nuts.Room.GameDetails where
 
 import Prelude
 
-import App.Navigation (navigate)
-import App.Route as Route
 import Control.Alt ((<|>))
-import Core.Room.GameManager (changeGameState, startGame)
-import Core.Room.RoomManager (leaveOrDeleteRoom)
-import Data.Array (length)
-import Data.Either (Either(..), either)
+import Core.Room.GameManager (startGame)
+import Data.Either (either)
 import Data.Int (floor)
-import Data.Newtype (unwrap)
 import Data.String (null)
 import Data.Tuple.Nested ((/\))
 import Deku.Control (text, text_)
-import Deku.Core (Nut, Domable)
+import Deku.Core (Domable)
 import Deku.DOM as D
-import Deku.Do (useState')
 import Deku.Do as Doku
 import Deku.Listeners (click)
 import Deku.Listeners as DL
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import FRP.Event (ZoraEvent)
-import Models.Models (GameState(..), Player)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Dumb.Input (inputText, inputText')
+import Nuts.Dumb.Input (inputText')
 import Nuts.Room.RoomEnv (RoomEnv)
-import Paraglider.Operator.Combine (combineLatest, combineLatest3)
+import Paraglider.Operator.Combine (combineLatest)
 import Platform.Deku.Html (bangCss, bangPlaceholder, bangValue, combineCss, css)
 import Platform.Deku.Misc (useStatefulDom)
 

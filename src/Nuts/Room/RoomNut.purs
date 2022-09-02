@@ -17,7 +17,6 @@ import Deku.Control (switcher, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
-import Hyrule.Zora (liftImpure)
 import Models.Models (GameState(..), RoomId)
 import Nuts.Game.GameNut as GameNut
 import Nuts.Room.RoomChat as RoomChat
@@ -25,9 +24,9 @@ import Nuts.Room.RoomLeftBar as RoomLeftBar
 import Nuts.Room.RoomRightBar as RoomRightBar
 import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.DoOnNext (doOnNext)
+import Paraglider.Operator.InitialIfAsync (initialIfAsync)
 import Platform.Deku.Html (bangCss)
 import Platform.Deku.Misc (useCleanFbEvent)
-import Platform.FRP.Led (initialIfAsync)
 import Platform.Firebase.Auth (uid)
 
 nut :: Env -> RoomId -> Nut
@@ -39,7 +38,7 @@ nut env@{ fb, self } roomId = Doku.do
 
   let
     playersEv = playersEv' # doOnNext \players -> case find (\{id} -> id == uid self) players of
-      Nothing -> liftImpure $ navigate $ Route.Landing
+      Nothing -> navigate Route.Landing
       Just _ -> pure unit
 
     roomEnv =

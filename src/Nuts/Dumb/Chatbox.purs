@@ -24,7 +24,7 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import FRP.Event (ZoraEvent)
+import FRP.Event (Event)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Nuts.Room.RoomEnv (RoomEnv)
@@ -39,8 +39,8 @@ import Web.HTML.Window (requestAnimationFrame)
 
 type ChatboxConfig l p rowModel =
   { renderRow :: rowModel -> Domable l p
-  , rowsEv :: ZoraEvent (Array rowModel)
-  , sendMessageEv :: ZoraEvent (String -> Effect Unit)
+  , rowsEv :: Event (Array rowModel)
+  , sendMessageEv :: Event (String -> Effect Unit)
   }
 
 nut :: ∀ rm l p. ChatboxConfig l p rm -> Domable l p
@@ -52,7 +52,7 @@ nut {renderRow, rowsEv, sendMessageEv} = Doku.do
     chatCss = bangCss'
       [ css "grow overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full"
       , css "scrollbar-track-rounded-full scrollbar-thumb-gray-900 scrollbar-track-gray-800"
-      , css "first:pt-6 shadow-md px-3 flex flex-col justify-end"
+      , css "shadow-md px-3 flex flex-col flow flex-nowrap"
       ]
 
     scrollDownChat :: DOM.Element -> Effect Unit
@@ -84,7 +84,7 @@ nut {renderRow, rowsEv, sendMessageEv} = Doku.do
           ]
     chatAttrs = chatCss <|> bangId "chatbox" <|> (pure $ D.Self := onChatSelf)
 
-  D.div (bangCss "flex flex-col h-full grow")
+  D.div (bangCss "flex flex-col h-full grow" )
     [ dynDiffOnlyAddition D.div chatAttrs renderRow rowsEv
     , typeBox
     ]

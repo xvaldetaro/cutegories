@@ -8,7 +8,7 @@ import Data.Either (hush)
 import Data.Maybe (Maybe(..), isNothing)
 import Effect (Effect)
 import Effect.Class.Console (log)
-import FRP.Event (ZoraEvent, fromEvent, makeEvent)
+import FRP.Event (Event, makeEvent)
 import Routing.Duplex (parse, print)
 import Routing.Duplex as RD
 import Routing.Hash (getHash, matchesWith, setHash)
@@ -23,8 +23,8 @@ redirectToLandingIfInialRouteIsInvalid = do
     log "Got invalid Route. Navigating to Landing."
     navigate Route.Landing
 
-routeChangeEvent :: ZoraEvent Route
-routeChangeEvent = fromEvent $ makeEvent \k -> do
+routeChangeEvent :: Event Route
+routeChangeEvent = makeEvent \k -> do
   matchesWith (parse routeCodec) \old new ->
     when (old /= Just new) do
       log $ "Changing route from " <> show old <> " to " <> show new

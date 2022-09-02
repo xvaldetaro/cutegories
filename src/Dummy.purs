@@ -10,7 +10,6 @@ import Effect (Effect)
 import Effect.Class.Console (log)
 import Effect.Now (nowDateTime)
 import FRP.Event (create, subscribe)
-import Hyrule.Zora (liftImpure, runImpure)
 import Paraglider.Operator.DiffAccum (diffAccum)
 import Platform.Firebase.Firestore.Query as Query
 import Platform.Util.ErrorHandling (liftEither')
