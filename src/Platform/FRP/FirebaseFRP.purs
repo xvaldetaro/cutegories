@@ -2,7 +2,7 @@ module Platform.FRP.FirebaseFRP where
 
 import Prelude
 
-import App.Env (FbEvent)
+import Platform.Firebase.Synonyms (FbEvent)
 import Data.Maybe (Maybe)
 import FRP.Event (makeEvent)
 import Paraglider.Operator.FromAff (fromAff)

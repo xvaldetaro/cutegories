@@ -2,14 +2,14 @@ module Platform.Firebase.Firebase where
 
 import Prelude
 
-import Data.Either (Either)
-import Effect.Aff (Aff, try)
+import Effect.Aff (try)
 import Models.Models (Chat)
 import Platform.Firebase.Analytics (FirebaseAnalytics, firebaseAnalyticsAff)
 import Platform.Firebase.Auth (FirebaseAuth, firebaseAuthAff)
 import Platform.Firebase.Config (FirebaseApp, firebaseAppAff)
-import Platform.Firebase.FbErr (FbErr, mapFbErr)
+import Platform.Firebase.FbErr (mapFbErr)
 import Platform.Firebase.Firestore.Common (Firestore, firestoreDbAff)
+import Platform.Firebase.Synonyms (FbAff)
 
 type FirebaseEnvR :: forall k. k -> Row Type -> Type
 type FirebaseEnvR a r =
@@ -22,7 +22,7 @@ type FirebaseEnvR a r =
 
 type FirebaseEnv = FirebaseEnvR Chat ()
 
-startFirebase :: Aff (Either FbErr FirebaseEnv)
+startFirebase :: FbAff FirebaseEnv
 startFirebase = mapFbErr "startFirebase" <$> try do
   app <- firebaseAppAff
   analytics <- firebaseAnalyticsAff app

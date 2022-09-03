@@ -55,7 +55,7 @@ nut {env: env@{errPush, fb, self}, roomId, playersEv} = Doku.do
         ]
 
     renderHeader =
-      [ Btn.red "Declare No winner!" "mb-6 mt-2 px-3" (mkDoDeclareWinnerEv Nothing)
+      [ Btn.red "Declare No winner!" "mb-2 mt-2 px-3" (mkDoDeclareWinnerEv Nothing)
       ]
 
     renderChild {userId, player: mbPlayer, guesses} =

@@ -2,6 +2,7 @@ module Platform.Firebase.Firestore.Write where
 
 import Prelude
 
+import Platform.Firebase.Synonyms (FbAff)
 import Control.Promise (Promise, toAffE)
 import Data.Either (Either)
 import Effect.Aff (Aff, try)
@@ -16,14 +17,14 @@ import Simple.JSON as JSON
 foreign import removeUndefineds :: Foreign -> Foreign
 
 foreign import deleteDoc_ :: EffectFn3 Firestore String String (Promise Unit)
-deleteDoc :: Firestore -> String -> String -> Aff (Either FbErr Unit)
+deleteDoc :: Firestore -> String -> String -> FbAff Unit
 deleteDoc fs path id = do
   ei <- try $ toAffE $ (runEffectFn3 deleteDoc_) fs path id
   pure $ mapFbErr ("deleteDocF:" <> path <> "/" <> id) ei
 
 foreign import setDoc_ :: EffectFn4 Firestore String String Foreign (Promise Unit)
 
-setDocF :: Firestore -> String -> String -> Foreign -> Aff (Either FbErr Unit)
+setDocF :: Firestore -> String -> String -> Foreign -> FbAff Unit
 setDocF fs path id x = do
   ei <- try $ toAffE $ (runEffectFn4 setDoc_) fs path id (removeUndefineds x)
   pure $ mapFbErr ("setDocF:" <> path <> "/" <> id) ei
@@ -35,12 +36,12 @@ setDoc
   -> String
   -> String
   -> a
-  -> Aff (Either FbErr Unit)
+  -> FbAff Unit
 setDoc fs path id x = setDocF fs path id $ JSON.writeImpl x
 
 foreign import addDoc_ :: EffectFn3 Firestore String Foreign (Promise DocRef)
 
-addDocF :: Firestore -> String -> Foreign -> Aff (Either FbErr DocRef)
+addDocF :: Firestore -> String -> Foreign -> FbAff DocRef
 addDocF fs path x = do
   ei <- try $ toAffE $ (runEffectFn3 addDoc_) fs path (removeUndefineds x)
   pure $ mapFbErr ("addDocF:" <> path) ei
@@ -51,7 +52,7 @@ addDoc
   => Firestore
   -> String
   -> a
-  -> Aff (Either FbErr DocRef)
+  -> FbAff DocRef
 addDoc fs path x = addDocF fs path $ JSON.writeImpl x
 
 foreign import updateDoc_
@@ -63,7 +64,7 @@ updateDocF
   -> String
   -> Foreign
   -> Array ArrayUpdateF
-  -> Aff (Either FbErr Unit)
+  -> FbAff Unit
 updateDocF fs path id objectFragment arrayUpdates = do
   ei <- try $ toAffE $ (runEffectFn5 updateDoc_) fs path id objectFragment arrayUpdates
   pure $ mapFbErr ("updateDocF:" <> path <> "/" <> id) ei
@@ -77,7 +78,7 @@ updateDoc
   -> String
   -> a
   -> Array (ArrayUpdate b)
-  -> Aff (Either FbErr Unit)
+  -> FbAff Unit
 updateDoc fs path id objectFragment arrayUpdates = updateDocF fs path id
   (removeUndefineds $ JSON.writeImpl objectFragment)
   (processArrayUpdates arrayUpdates)

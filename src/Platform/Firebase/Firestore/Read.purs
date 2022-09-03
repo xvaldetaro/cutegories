@@ -2,26 +2,26 @@ module Platform.Firebase.Firestore.Read where
 
 import Prelude
 
+import Platform.Firebase.Synonyms (FbAff)
 import Control.Monad.Except (runExceptT)
 import Control.Promise (Promise, toAffE)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
 import Effect (Effect)
-import Effect.Aff (Aff, try)
-import Effect.Uncurried (EffectFn2, EffectFn3, EffectFn4, EffectFn5, EffectFn6, EffectFn7, runEffectFn2, runEffectFn3, runEffectFn4, runEffectFn5, runEffectFn6, runEffectFn7)
+import Effect.Aff (try)
+import Effect.Uncurried (EffectFn2, EffectFn4, EffectFn5, EffectFn7, runEffectFn2, runEffectFn4, runEffectFn5, runEffectFn7)
 import Foreign (Foreign)
-import Platform.Firebase.Config (FirebaseApp)
-import Platform.Firebase.FbErr (FbErr(..), mapFbErr, mkErr)
-import Platform.Firebase.Firestore.Common (Firestore, DocumentReference)
+import Platform.Firebase.FbErr (FbErr, mapFbErr, mkErr)
+import Platform.Firebase.Firestore.Common (Firestore)
 import Platform.Firebase.Firestore.Query (Query, toJs)
 import Platform.Util.ErrorHandling (liftEither', liftSuccess)
-import Simple.JSON (class ReadForeign, class WriteForeign, E)
+import Simple.JSON (class ReadForeign, E)
 import Simple.JSON as JSON
 
 foreign import getDoc_ :: EffectFn5 Firestore String String (∀ a. a -> Maybe a) (∀ a. Maybe a) (Promise (Maybe Foreign))
 
-getDoc :: ∀ a. ReadForeign a => Firestore -> String -> String -> Aff (Either FbErr (Maybe a))
+getDoc :: ∀ a. ReadForeign a => Firestore -> String -> String -> FbAff (Maybe a)
 getDoc fs path id = runExceptT do
   mbA <- liftSuccess $ jsF
   let callsite = "getDoc:" <> path <> "/" <> id
@@ -35,7 +35,7 @@ getDoc fs path id = runExceptT do
 
 foreign import queryDocs_ :: EffectFn2 Firestore Foreign (Promise Foreign)
 
-queryDocs :: ∀ a. ReadForeign a => Firestore -> Query -> Aff (Either FbErr (Array a))
+queryDocs :: ∀ a. ReadForeign a => Firestore -> Query -> FbAff (Array a)
 queryDocs fs query = parseDocResult ("getDocs:" <> query.path) <$> jsF
   where
   jsF = do

@@ -11,11 +11,12 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import FRP.Event (Event, Event, create)
+import FRP.Event (Event, create)
 import Paraglider.Operator.ToAff (toAff)
 import Platform.Firebase.Auth (User, authStateChangedEventWithAnonymousAccountCreation)
 import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firebase (FirebaseEnv, startFirebase)
+import Platform.Firebase.Synonyms (FbEvent)
 import Platform.Util.ErrorHandling (liftSuccess)
 
 data AppEvent
@@ -33,8 +34,6 @@ type Env =
   }
 
 type AppNut = Reader Env Nut
-
-type FbEvent a = Event (Either FbErr a)
 
 forceDocPresent :: ∀ a. Either FbErr (Maybe a) -> Either FbErr a
 forceDocPresent  eiMbRoom = eiMbRoom >>= note (DocNotFound "room")
