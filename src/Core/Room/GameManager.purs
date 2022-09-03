@@ -6,6 +6,8 @@ import App.Env (Env, FbEvent)
 import Control.Monad.Except (runExceptT)
 import Core.Room.RoomManager (gamePath)
 import Data.Array (filter)
+import Data.Array as Array
+import Data.Array.NonEmpty (NonEmptyArray, head)
 import Data.DateTime.Instant (unInstant)
 import Data.Either (Either)
 import Data.Map (Map)
@@ -17,7 +19,7 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Now (now)
-import Models.Models (Game, GameState(..), Guess, Guesses, RoomId, blankGuesses)
+import Models.Models (Game, GameState(..), Guesses, Player, RoomId, Guess, blankGuesses)
 import Platform.FRP.FirebaseFRP (docEvent)
 import Platform.Firebase.Auth (uid)
 import Platform.Firebase.FbErr (FbErr)
@@ -55,11 +57,25 @@ getSelfGuesses {fb, self} roomId = runExceptT do
     myId = uid self
   pure $ filter (\{userId} -> userId == myId) guessesArr
 
-getGuessesByUser :: FirebaseEnv -> RoomId -> Aff (Either FbErr (Map String Guess))
-getGuessesByUser fb id = runExceptT do
-  mbGuesses <- liftSuccess $ getGuesses fb id
-  let guessesArr = maybe [] (\{guesses} -> guesses) mbGuesses
-  pure $ Map.fromFoldable $ (\guess@{userId} -> Tuple userId guess) <$> guessesArr
+type PlayerGuesses = {userId :: String, player :: Maybe Player, guesses :: NonEmptyArray String}
+
+getGuessesByUser :: FirebaseEnv -> RoomId -> Array Player -> Aff (Either FbErr (Array PlayerGuesses))
+getGuessesByUser fb roomId players = runExceptT do
+  mbGuesses <- liftSuccess $ getGuesses fb roomId
+  let
+    playerMap = Map.fromFoldable $ (\p@{id} -> Tuple id p) <$> players
+
+    guessesArr = maybe [] (\{guesses} -> guesses) mbGuesses
+
+    grouped = Array.groupAllBy (\g1 g2 -> compare g1.userId g2.userId) guessesArr
+
+    mkPlayerGuess :: NonEmptyArray Guess -> PlayerGuesses
+    mkPlayerGuess guesses = {userId, player: Map.lookup userId playerMap, guesses: guessTexts}
+      where
+      guessTexts = (_.text) <$> guesses
+      userId = (head guesses).userId
+  pure (mkPlayerGuess <$> grouped)
+
 
 getGuesses :: FirebaseEnv -> RoomId -> Aff (Either FbErr (Maybe Guesses))
 getGuesses fb id = getDoc fb.db guessesPath id

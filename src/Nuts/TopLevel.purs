@@ -33,7 +33,7 @@ nut = Doku.do
     routeToChild (Tuple route env) = case route of
       Route.Landing -> Landing.nut env
       Route.Room roomId -> RoomNut.nut env roomId
-      Route.Debug -> Debug.nut
+      Route.Debug -> Debug.nut env
       _ -> text_ "Route not available"
 
     appErrEv = keepLatest $ eiEnvEv <#> \eiEnv -> case eiEnv of

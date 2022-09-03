@@ -21,10 +21,7 @@ import Deku.Do (useState')
 import Deku.Do as Doku
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Timer (setTimeout)
-import FRP.Behavior (sample)
-import FRP.Behavior.Time (instant)
-import FRP.Event (Event, delay, fold, memoize)
+import FRP.Event (fold, memoize)
 import FRP.Event.Time (interval)
 import Models.Models (GameState(..))
 import Nuts.Dumb.Btn as Btn
@@ -34,9 +31,9 @@ import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.MapEffectful (mapEffectful)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Take (take)
-import Paraglider.Operator.Timeout (timeout, timeoutAt)
+import Paraglider.Operator.Timeout (timeoutAt)
 import Platform.Deku.Html (bangCss, css)
-import Platform.Deku.Misc (envyBurning, logE, useCleanFbEvent, wrapLogs)
+import Platform.Deku.Misc (useCleanFbEvent)
 import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
@@ -51,7 +48,7 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv} = Doku.do
     mkCountdownEv game = remainingTime game <$> interval 1000
     countdownEv = switchMap mkCountdownEv (take 1 gameEv)
 
-    doEndGame = launchAff_ $ void $ changeGameState fb roomId NotStarted
+    doEndGame = launchAff_ $ void $ changeGameState fb roomId Results
 
     renderGuess text = D.div (bangCss "p-2 w-full text-gray-100") [ text_ text ]
     doPushGuess text = launchAff_ do

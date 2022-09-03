@@ -9,7 +9,7 @@ import Data.Array (head)
 import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
 import Data.Either (Either)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Time.Duration (Seconds(..), fromDuration, toDuration)
@@ -74,11 +74,11 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
-decideWinner :: FirebaseEnv -> RoomId -> UserId -> Aff (Either FbErr Unit)
-decideWinner fb roomId userId = updateDoc fb.db roomPath roomId patch [au]
+declareWinner :: FirebaseEnv -> RoomId -> Maybe UserId -> Aff (Either FbErr Unit)
+declareWinner fb roomId mbUserId = updateDoc fb.db gamePath roomId patch au
   where
-  patch = {gameEndSnapshot: Nothing :: Maybe Game}
-  au = { field: "scores", op: ArrayUnion, elements: [userId]}
+  patch = {gameState: NotStarted}
+  au = maybe [] (\userId -> [{ field: "scores", op: ArrayUnion, elements: [userId]}]) mbUserId
 
 setGameEndSnapshot :: FirebaseEnv -> RoomId -> Game -> Aff (Either FbErr Unit)
 setGameEndSnapshot fb roomId game = updateDoc fb.db roomPath roomId patch arr

@@ -25,7 +25,7 @@ nut currentRouteEv =
     , menuItem Route.PlayerList "Games" ""
     , menuItem Route.CreatePlayer "Players" ""
     , menuItem Route.PlaygroundDummy "Playground" ""
-    , menuItem Route.PlaygroundFrp "Frp" ""
+    , menuItem Route.Debug "Debug" ""
     ]
     where
     menuItem route text extraCss = D.a

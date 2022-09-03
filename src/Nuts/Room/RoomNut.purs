@@ -19,6 +19,7 @@ import Deku.DOM as D
 import Deku.Do as Doku
 import Models.Models (GameState(..), RoomId)
 import Nuts.Game.GameNut as GameNut
+import Nuts.Game.ResultsNut as ResultsNut
 import Nuts.Room.RoomChat as RoomChat
 import Nuts.Room.RoomLeftBar as RoomLeftBar
 import Nuts.Room.RoomRightBar as RoomRightBar
@@ -59,6 +60,9 @@ nut env@{ fb, self } roomId = Doku.do
     gameEnv = { env, roomId, roomEv, gameEv }
     gamePage = GameNut.nut gameEnv
 
+    resultsEnv = { env, roomId, roomEv, playersEv }
+    resultsPage = ResultsNut.nut resultsEnv
+
     loadingOrDataEv = initialIfAsync Nothing $ Just <$> roomEv
 
   (combineLatest Tuple loadingOrDataEv gameEv) # switcher D.div (bangCss "h-full items-center justify-center") case _ of
@@ -66,7 +70,7 @@ nut env@{ fb, self } roomId = Doku.do
     Tuple _ game -> case game.gameState of
       NotStarted -> roomPage
       Started -> gamePage
-      Results -> gamePage
+      Results -> resultsPage
 
   where
   loadingDiv = D.div_ [text_ "Loading..."]
