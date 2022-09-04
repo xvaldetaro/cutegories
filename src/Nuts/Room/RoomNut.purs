@@ -20,9 +20,9 @@ import Deku.Do as Doku
 import Models.Models (GameState(..), RoomId)
 import Nuts.Game.GameNut as GameNut
 import Nuts.Game.ResultsNut as ResultsNut
-import Nuts.Room.RoomChat as RoomChat
-import Nuts.Room.RoomLeftBar as RoomLeftBar
-import Nuts.Room.RoomRightBar as RoomRightBar
+import Nuts.Waiting.RoomChat as RoomChat
+import Nuts.Waiting.Controls as RoomLeftBar
+import Nuts.Waiting.PlayerListContainer as RoomRightBar
 import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.DoOnNext (doOnNext)
 import Paraglider.Operator.InitialIfAsync (initialIfAsync)

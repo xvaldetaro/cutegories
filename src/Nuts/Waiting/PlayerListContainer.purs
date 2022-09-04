@@ -1,11 +1,11 @@
-module Nuts.Room.RoomRightBar where
+module Nuts.Waiting.PlayerListContainer where
 
 
 import Deku.Control (text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Nuts.Room.RoomEnv (RoomEnv)
-import Nuts.Room.RoomPlayerList as RoomPlayerList
+import Nuts.Waiting.WaitingPlayerList as RoomPlayerList
 import Platform.Deku.Html (bangCss)
 
 nut :: RoomEnv -> Nut

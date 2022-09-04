@@ -1,4 +1,4 @@
-module Nuts.Room.GameDetails where
+module Nuts.Waiting.GameDetails where
 
 import Prelude
 

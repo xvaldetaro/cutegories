@@ -17,7 +17,7 @@ nut :: Event Route -> Nut
 nut currentRouteEv =
   D.div
     ( bangCss'
-      [ css "h-14 px-0 flex flex-row items-stretch justify-start"
+      [ css "hidden md:flex h-14 px-0 flex-row items-stretch justify-start"
       , css "font-semibold text-lg shadow-sm bg-gray-900 text-gray-300"
       ]
     )

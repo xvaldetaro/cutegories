@@ -1,29 +1,22 @@
-module Nuts.Room.RoomLeftBar where
+module Nuts.Waiting.Controls where
 
 import Prelude
 
 import App.Navigation (navigate)
 import App.Route as Route
-import Control.Alt ((<|>))
-import Core.Room.GameManager (changeGameState)
 import Core.Room.RoomManager (leaveOrDeleteRoom)
-import Data.Array (length)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Newtype (unwrap)
 import Deku.Control (text, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
-import Deku.Do (useState')
 import Deku.Do as Doku
-import Deku.Listeners (click)
-import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Models.Models (GameState(..), Player)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Room.GameDetails as GameDetails
+import Nuts.Waiting.GameDetails as GameDetails
 import Nuts.Room.RoomEnv (RoomEnv)
-import Platform.Deku.Html (bangCss, combineCss, css)
+import Platform.Deku.Html (bangCss, css)
 
 nut :: RoomEnv -> Nut
 nut roomEnv@{ env: {fb, self, errPush}, playersEv, roomId, roomEv } = Doku.do

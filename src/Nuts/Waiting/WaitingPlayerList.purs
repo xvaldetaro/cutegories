@@ -1,4 +1,4 @@
-module Nuts.Room.RoomPlayerList where
+module Nuts.Waiting.WaitingPlayerList where
 
 import Prelude
 

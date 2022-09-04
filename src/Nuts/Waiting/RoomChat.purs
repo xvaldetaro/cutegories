@@ -1,4 +1,4 @@
-module Nuts.Room.RoomChat where
+module Nuts.Waiting.RoomChat where
 
 import Prelude
 
