@@ -83,6 +83,18 @@ updateDoc fs path id objectFragment arrayUpdates = updateDocF fs path id
   (removeUndefineds $ JSON.writeImpl objectFragment)
   (processArrayUpdates arrayUpdates)
 
+updateDoc'
+  :: ∀ a
+   . WriteForeign a
+  => Firestore
+  -> String
+  -> String
+  -> a
+  -> FbAff Unit
+updateDoc' fs path id objectFragment = updateDocF fs path id
+  (removeUndefineds $ JSON.writeImpl objectFragment) []
+
+
 data ArrayOp = ArrayUnion | ArrayRemove
 type ArrayUpdate a = { field :: String, op :: ArrayOp, elements :: Array a }
 type ArrayUpdateF = { field :: String, op :: String, elements :: Foreign }

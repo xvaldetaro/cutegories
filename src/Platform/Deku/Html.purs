@@ -44,3 +44,6 @@ enterUp :: ∀ element. Event (Effect Unit) -> Event (Attribute element)
 enterUp effEv = keyUp $ filterEnter <$> effEv
   where
   filterEnter eff = \kbEvent -> if KeyboardEvent.code kbEvent == "Enter" then eff else pure unit
+
+hiddenIf :: Boolean -> String
+hiddenIf x = if x then css "hidden" else ""

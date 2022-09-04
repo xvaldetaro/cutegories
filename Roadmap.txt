@@ -1,1 +1,13 @@
 Copy to clipboard button for room Id
+filter invalids from pills
+random letter generation
+hide results commands from non-admins
+
+Mobile interface
+  * Hide nav
+  * Stack Waiting room menus
+
+single guess mode
+
+category bank
+  * with topic

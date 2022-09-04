@@ -11,7 +11,7 @@ import Core.Room.RoomManager (addPlayerToRoom, createRoom, getPlayerForUser, get
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
-import Data.String (length)
+import Data.String (length, trim)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute ((:=))
 import Deku.Control (switcher_, text, text_)
@@ -61,9 +61,10 @@ nut env = Doku.do
         [ text_ "Your Nickname"
         , inputText
             ( (pure $ D.Placeholder := "Leeroy Jenkins")
-                <|> (DL.textInput $ pure pushSelfPlayerName)
+                <|> (DL.textInput $ pure $ pushSelfPlayerName <<< trim)
                   <|> (enterUp $ doCreateRoomEv)
                     <|> (bangCss $ inputCss <> css "w-full mt-1 mb-6")
+                      <|> (pure $ D.Maxlength := "10")
             )
         ]
 

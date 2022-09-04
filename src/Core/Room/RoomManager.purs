@@ -12,13 +12,12 @@ import Data.Either (Either)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap)
 import Data.String (toLower)
-import Data.Time.Duration (Seconds(..), fromDuration, toDuration)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
 import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, GameState(..), Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, blankGame)
+import Models.Paths (chatPath, gamePath, guessesPath, playersPath, roomPath, valuationPath)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -31,19 +30,6 @@ import Platform.Firebase.Synonyms (FbEvent, FbAff)
 import Platform.Util.ErrorHandling (liftSuccess)
 import Record as Record
 import Type.Proxy (Proxy(..))
-import Web.HTML.HTMLMediaElement (duration)
-
-gamePath :: String
-gamePath = "games"
-
-playersPath :: RoomId -> String
-playersPath roomId = "rooms/" <> roomId <> "/players"
-
-roomPath :: String
-roomPath = "rooms"
-
-chatPath :: RoomId -> String
-chatPath roomId = "rooms/" <> roomId <> "/messages"
 
 observeRoom :: FirebaseEnv -> RoomId -> FbEvent (Maybe Room)
 observeRoom fb id = docEvent fb.db roomPath id
@@ -75,11 +61,10 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
-declareWinner :: FirebaseEnv -> RoomId -> Maybe UserId -> FbAff Unit
-declareWinner fb roomId mbUserId = updateDoc fb.db gamePath roomId patch au
+addScores :: FirebaseEnv -> RoomId -> Maybe (Array String) -> FbAff Unit
+addScores fb roomId mbWinnerIds = updateDoc fb.db roomPath roomId {} au
   where
-  patch = {gameState: NotStarted}
-  au = maybe [] (\userId -> [{ field: "scores", op: ArrayUnion, elements: [userId]}]) mbUserId
+  au = maybe [] (\ids -> [{ field: "scores", op: ArrayUnion, elements: ids}]) mbWinnerIds
 
 setGameEndSnapshot :: FirebaseEnv -> RoomId -> Game -> FbAff Unit
 setGameEndSnapshot fb roomId game = updateDoc fb.db roomPath roomId patch arr
@@ -117,8 +102,8 @@ deleteRoom fb roomId = runExceptT do
   liftSuccess $ deleteMessages fb roomId
   liftSuccess $ deleteDoc fb.db roomPath roomId
   liftSuccess $ deleteDoc fb.db gamePath roomId
-  liftSuccess $ deleteDoc fb.db gamePath roomId
-  liftSuccess $ deleteDoc fb.db "guesses" roomId
+  liftSuccess $ deleteDoc fb.db valuationPath roomId
+  liftSuccess $ deleteDoc fb.db guessesPath roomId
 
 deleteRoomPlayers :: FirebaseEnv -> RoomId -> FbAff Unit
 deleteRoomPlayers fb roomId = runExceptT do

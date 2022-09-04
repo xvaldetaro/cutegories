@@ -8,7 +8,7 @@ import Bolson.Core as Bolson
 import Control.Alt ((<|>))
 import Data.Array (drop, length, mapWithIndex)
 import Data.Array as Array
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Foldable (oneOfMap)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -21,6 +21,7 @@ import Deku.Do (useState')
 import Deku.Do as Doku
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import FRP.Event (Event, filterMap, keepLatest, memoize, withLast)
 import Paraglider.Operator.DiffAccum (diffAccum)
@@ -34,6 +35,7 @@ import Paraglider.Operator.Replay (replay, replayRefCount)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.ToClosure (toClosure)
 import Platform.Firebase.FbErr (FbErr)
+import Platform.Firebase.Synonyms (FbAff)
 
 -- | Renders an Array of items with its original order. This function is used to display an Array of
 -- | Models that you have no control of. Say you get all the items in your list from the backend and
@@ -183,3 +185,11 @@ errorEvent ev = filterMap errorGo ev
   where
   errorGo (Left e) = Just e
   errorGo _ = Nothing
+
+-- | Applies MemoBeh' so that emissions from the FB event are cached and replayed for subsequent
+-- | subscribers. Drains FbErr and pushes them to Env so that they are displayed
+cleanFbAff :: Env -> FbAff Unit -> Aff Unit
+cleanFbAff { errPush } aff = aff >>= (liftEffect <<< either errPush pure)
+
+ife :: ∀ a. a -> a -> Boolean -> a
+ife x y b = if b then x else y

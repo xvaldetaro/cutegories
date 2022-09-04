@@ -2,33 +2,33 @@ module Core.Room.GameManager where
 
 import Prelude
 
-import App.Env (Env)
+import App.Env (Env, forceDocPresent)
+import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Except (runExceptT)
-import Core.Room.RoomManager (gamePath)
-import Data.Array (filter)
+import Data.Array (filter, foldl, (:))
 import Data.Array as Array
-import Data.Array.NonEmpty (NonEmptyArray, head)
 import Data.DateTime.Instant (unInstant)
+import Data.Either (note)
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Effect.Now (now)
-import Models.Models (Game, GameState(..), Guesses, Player, RoomId, Guess, blankGuesses)
+import Models.Models (Game, GameState(..), Guess, GuessMetadata, Guesses, Player, RoomId, GuessValidationRec, blankGame, blankGuesses, blankValuation)
+import Models.Paths (gamePath, guessesPath, valuationPath)
 import Platform.FRP.FirebaseFRP (docEvent)
 import Platform.Firebase.Auth (uid)
+import Platform.Firebase.FbErr (FbErr(..))
 import Platform.Firebase.Firebase (FirebaseEnv)
 import Platform.Firebase.Firestore.Read (getDoc)
-import Platform.Firebase.Firestore.Write (ArrayOp(..), ArrayUpdate, setDoc, updateDoc)
+import Platform.Firebase.Firestore.Write (ArrayOp(..), ArrayUpdate, setDoc, updateDoc, updateDoc')
 import Platform.Firebase.Synonyms (FbEvent, FbAff)
 import Platform.Util.ErrorHandling (liftSuccess)
-
-guessesPath :: String
-guessesPath = "guesses"
+import Platform.Util.Similarity (findBestMatch)
 
 observeGame :: FirebaseEnv -> RoomId -> FbEvent (Maybe Game)
 observeGame fb id = docEvent fb.db gamePath id
@@ -38,11 +38,16 @@ startGame fb id topic durationSeconds = do
   start <- liftEffect $ unwrap <<< unInstant <$> now
   let
     endsAt = start + (durationSeconds * 1000.0)
-    (game :: Game) = {topic, endGuesses: [], gameState: Started, ready: [], id, endsAt}
-  log $ show [endsAt, start, durationSeconds]
+    game = (blankGame id) { gameState = Started, topic = topic, endsAt = endsAt }
   runExceptT do
     liftSuccess $ setDoc fb.db guessesPath id blankGuesses
-    liftSuccess $ updateDoc fb.db gamePath id game ([]:: Array (ArrayUpdate String))
+    liftSuccess $ updateDoc' fb.db gamePath id game
+
+changeGameToResults :: FirebaseEnv -> RoomId -> Array Player -> FbAff Unit
+changeGameToResults fb roomId allPlayers = runExceptT do
+  guessMetadataArray <- liftSuccess $ getGuessMetadataArr fb roomId allPlayers
+  liftSuccess $ setDoc fb.db valuationPath roomId blankValuation
+  liftSuccess $ updateDoc' fb.db gamePath roomId {gameState: Results, guessMetadataArray}
 
 changeGameState :: FirebaseEnv -> RoomId -> GameState -> FbAff Unit
 changeGameState fb id gameState = runExceptT do
@@ -56,27 +61,34 @@ getSelfGuesses {fb, self} roomId = runExceptT do
     myId = uid self
   pure $ filter (\{userId} -> userId == myId) guessesArr
 
-type PlayerGuesses = {userId :: String, player :: Maybe Player, guesses :: NonEmptyArray String}
-type SimilarGuess = { guess :: Guess, similarity :: Boolean }
-type GuessCompendium = { byPlayer :: Array PlayerGuesses, similarityTable :: Map String SimilarGuess }
-
-getGuessesByUser :: FirebaseEnv -> RoomId -> Array Player -> FbAff (Array PlayerGuesses)
-getGuessesByUser fb roomId players = runExceptT do
+getGuessMetadataArr :: FirebaseEnv -> RoomId -> Array Player -> FbAff (Array GuessMetadata)
+getGuessMetadataArr fb roomId allPlayers = runExceptT do
   mbGuesses <- liftSuccess $ getGuesses fb roomId
+  {guesses} <- liftEither $ note (DocNotFound "No guesses to get metadata") mbGuesses
   let
-    playerMap = Map.fromFoldable $ (\p@{id} -> Tuple id p) <$> players
+    playerMap :: Map String Player
+    playerMap = Map.fromFoldable $ (\p@{id} -> Tuple id p) <$> allPlayers
 
-    guessesArr = maybe [] (\{guesses} -> guesses) mbGuesses
+    updateMap :: Map String (Array Player) -> Guess -> Map String (Array Player)
+    updateMap playersByGuessId {text, userId} = case Map.lookup userId playerMap of
+      Nothing -> playersByGuessId
+      Just player ->
+        let
+          current = fromMaybe [] (Map.lookup text playersByGuessId)
+          patched = player : current
+        in Map.insert text patched playersByGuessId
 
-    grouped = Array.groupAllBy (\g1 g2 -> compare g1.userId g2.userId) guessesArr
+    aggregatedPlayersByGuess :: Map String (Array Player)
+    aggregatedPlayersByGuess = foldl updateMap Map.empty guesses
 
-    mkPlayerGuess :: NonEmptyArray Guess -> PlayerGuesses
-    mkPlayerGuess guesses = {userId, player: Map.lookup userId playerMap, guesses: guessTexts}
-      where
-      guessTexts = (_.text) <$> guesses
-      userId = (head guesses).userId
-  pure (mkPlayerGuess <$> grouped)
+    uniqueTexts = Array.fromFoldable $ Map.keys aggregatedPlayersByGuess
 
+    calcSimilarities :: String -> Array Player -> GuessMetadata
+    calcSimilarities text players = {text, players, similars: findBestMatch text uniqueTexts}
+
+  pure $ Array.sortWith (_.text)
+    $ Array.fromFoldable
+      $ mapWithIndex calcSimilarities aggregatedPlayersByGuess
 
 getGuesses :: FirebaseEnv -> RoomId -> FbAff (Maybe Guesses)
 getGuesses fb id = getDoc fb.db guessesPath id

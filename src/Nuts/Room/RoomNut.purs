@@ -57,11 +57,8 @@ nut env@{ fb, self } roomId = Doku.do
         , RoomRightBar.nut roomEnv
         ]
 
-    gameEnv = { env, roomId, roomEv, gameEv }
+    gameEnv = { env, roomId, roomEv, gameEv, playersEv }
     gamePage = GameNut.nut gameEnv
-
-    resultsEnv = { env, roomId, roomEv, playersEv }
-    resultsPage = ResultsNut.nut resultsEnv
 
     loadingOrDataEv = initialIfAsync Nothing $ Just <$> roomEv
 
@@ -70,7 +67,7 @@ nut env@{ fb, self } roomId = Doku.do
     Tuple _ game -> case game.gameState of
       NotStarted -> roomPage
       Started -> gamePage
-      Results -> resultsPage
+      Results -> ResultsNut.nut { env, roomId, roomEv, playersEv, game }
 
   where
   loadingDiv = D.div_ [text_ "Loading..."]

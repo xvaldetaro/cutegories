@@ -6,12 +6,13 @@ import Prelude
 import Bolson.Core (envy)
 import Control.Alt ((<|>))
 import Control.Plus (empty)
-import Core.Room.GameManager (addGuess, changeGameState, getSelfGuesses)
+import Core.Room.GameManager (addGuess, changeGameToResults, getSelfGuesses)
 import Data.Array (snoc)
 import Data.DateTime.Instant (unInstant)
 import Data.Either (either)
 import Data.Int (floor)
 import Data.Newtype (unwrap)
+import Data.String (trim)
 import Data.Time.Duration (Milliseconds(..), Seconds(..), toDuration)
 import Data.Tuple.Nested ((/\))
 import Deku.Control (text, text_)
@@ -23,7 +24,6 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import FRP.Event (fold, memoize)
 import FRP.Event.Time (interval)
-import Models.Models (GameState(..))
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Chatbox as Chatbox
 import Nuts.Room.GameEnv (GameEnv)
@@ -32,12 +32,13 @@ import Paraglider.Operator.MapEffectful (mapEffectful)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Take (take)
 import Paraglider.Operator.Timeout (timeoutAt)
+import Paraglider.Operator.ToAff (toAff)
 import Platform.Deku.Html (bangCss, css)
-import Platform.Deku.Misc (useCleanFbEvent)
+import Platform.Deku.Misc (cleanFbAff, useCleanFbEvent)
 import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
-nut {env: env@{errPush, fb, self}, roomId, gameEv} = Doku.do
+nut {env: env@{errPush, fb, self}, roomId, gameEv, playersEv} = Doku.do
   lastGuessesSingle <- useCleanFbEvent env $ fromAff $ getSelfGuesses env roomId
   pushGuess /\ guessesEv' <- useState'
   let
@@ -48,14 +49,16 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv} = Doku.do
     mkCountdownEv game = remainingTime game <$> interval 1000
     countdownEv = switchMap mkCountdownEv (take 1 gameEv)
 
-    doEndGame = launchAff_ $ void $ changeGameState fb roomId Results
+    doEndGame = launchAff_ $ cleanFbAff env $ do
+      players <- toAff playersEv
+      changeGameToResults fb roomId players
 
     renderGuess text = D.div (bangCss "p-2 w-full text-gray-100") [ text_ text ]
     doPushGuess text = launchAff_ do
       liftEffect $ pushGuess text
       eiUnit <- addGuess env roomId text
       liftEffect $ either errPush pure eiUnit
-    pushGuessEv = pure doPushGuess
+    pushGuessEv = pure $ doPushGuess <<< trim
     lastTextsSingle = map (_.text) <$> lastGuessesSingle
     guessesEv = lastTextsSingle <|> (lastTextsSingle # switchMap (fold (flip snoc) guessesEv'))
 

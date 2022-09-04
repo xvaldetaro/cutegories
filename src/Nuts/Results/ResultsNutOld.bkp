@@ -28,7 +28,7 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import FRP.Event (fold, memoize)
 import FRP.Event.Time (interval)
-import Models.Models (GameState(..))
+import Models.Models (GameState(..), GuessMetadata)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Chatbox as Chatbox
 import Nuts.Room.GameEnv (GameEnv)
@@ -43,9 +43,9 @@ import Platform.Deku.Html (bangCss, css)
 import Platform.Deku.Misc (useCleanFbEvent)
 import Platform.Firebase.Auth (uid)
 
-nut :: ResultsEnv -> Nut
-nut {env: env@{errPush, fb, self}, roomId, playersEv} = Doku.do
-  let guessesByUserSingle = switchMap (fromAff <<< getGuessesByUser fb roomId) (take 1 playersEv)
+nut :: ResultsEnv -> Array GuessMetadata -> Nut
+nut {env: env@{errPush, fb, self}, roomId, playersEv} metaArr = Doku.do
+  let metadataEv = switchMap (fromAff <<< getGuessesByUser fb roomId) (take 1 playersEv)
   playerGuessArrEv <- useCleanFbEvent env $ guessesByUserSingle
 
   let

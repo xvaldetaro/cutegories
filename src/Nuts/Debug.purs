@@ -6,8 +6,10 @@ import Prelude
 import App.Env (Env)
 import Bolson.Core (envy)
 import Control.Alt ((<|>))
+import Control.Monad.Except (runExceptT)
 import Control.Plus (empty)
-import Core.Room.RoomManager (deleteRoom)
+import Core.Room.GameManager (getGuessMetadataArr, startGame)
+import Core.Room.RoomManager (deleteRoom, observeRoomPlayers)
 import Data.Maybe (Maybe(..))
 import Data.String (trim)
 import Data.Tuple.Nested ((/\))
@@ -19,11 +21,16 @@ import Deku.Do as Doku
 import Deku.Listeners (click, textInput)
 import Effect.Aff (launchAff_)
 import Effect.Class.Console (log)
+import Models.Paths (gamePath)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss)
 import Paraglider.Operator.MemoBeh (memoBeh)
+import Paraglider.Operator.ToAff (toAff)
 import Platform.Deku.Html (bangCss)
-import Platform.Deku.Misc (useStatefulDom)
+import Platform.Deku.Misc (cleanFbAff, useStatefulDom)
+import Platform.Firebase.Firestore.Write (updateDoc')
+import Platform.Util.ErrorHandling (liftSuccess)
+import Platform.Util.Similarity (findBestMatch)
 
 nut :: ∀ l p. Env -> Domable l p
 nut env = Doku.do
@@ -32,9 +39,16 @@ nut env = Doku.do
     doDeleteRoom id = launchAff_ do
       x <- deleteRoom env.fb (trim id)
       log $ show x
+    setBlankGame id = launchAff_ $ cleanFbAff env $ runExceptT do
+      players <- liftSuccess $ toAff $ observeRoomPlayers env.fb id
+      g <- liftSuccess $ getGuessMetadataArr env.fb id players
+      liftSuccess $ updateDoc' env.fb.db gamePath id {guessMetadataArray: g}
+
   D.div (bangCss "flex")
     [ inputDom
     , Btn.red "Delete Room" "" (doDeleteRoom <$> textEv)
+    , Btn.gray "Blank game" "" (setBlankGame <$> textEv)
+    -- , Btn.gray "Siim" "" (pure $ log $ show $ findBestMatch "kitten" ["kitteny", "dogs", "pups", "vitten"])
     ]
   -- p /\ e' <- useState'
   -- e <- envy <<< memoBeh e' Nothing

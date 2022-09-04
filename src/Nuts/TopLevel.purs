@@ -45,8 +45,8 @@ nut = Doku.do
     envEv = eiEnvEv # filterMap (either (const Nothing) Just)
 
   D.div (bangId "TopLevel" <|> bangCss "flex flex-col h-screen text-gray-100 bg-gray-700")
-    [ D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
-    , Nav.nut sharedRouteEv
+    [ -- D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
+     Nav.nut sharedRouteEv
     , switcher D.div (bangId "Router" <|> bangCss "h-full overflow-y-auto") routeToChild
         (combineLatest Tuple sharedRouteEv envEv)
     ]
