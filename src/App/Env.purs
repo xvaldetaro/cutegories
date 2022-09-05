@@ -21,6 +21,7 @@ import Platform.Util.ErrorHandling (liftSuccess)
 
 data AppEvent
   = ShowAppError String
+  | ShowToast String Int
 
 type Env =
   { fb :: FirebaseEnv
@@ -30,6 +31,7 @@ type Env =
   , appEvent :: Event AppEvent
 
   -- Ez helper stuff
+  , appPush :: AppEvent -> Effect Unit
   , errPush :: FbErr -> Effect Unit
   }
 
@@ -53,4 +55,4 @@ mkEnv = runExceptT do
       let s = show e
       log $ "Error pushed" <> s
       push $ ShowAppError s
-  pure {fb, self, errPush, appEvent: event }
+  pure {fb, self, errPush, appPush: push, appEvent: event }

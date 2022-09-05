@@ -29,6 +29,9 @@ import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText)
 import Nuts.Room.RoomEnv (RoomEnv)
 import Paraglider.Operator.Combine (combineLatest, combineLatest3)
+import Paraglider.Operator.DoOnNext (doOnNext)
+import Paraglider.Operator.MapEffectful (mapEffectful)
+import Paraglider.Operator.SwitchMap (switchMap)
 import Platform.Deku.Html (bangCss, bangCss', bangId, css, enterUp)
 import Platform.Deku.Misc (dynDiffOnlyAddition, envyBurning, useMemoBeh')
 import Web.DOM as DOM
@@ -51,8 +54,8 @@ nut {renderRow, rowsEv, sendMessageEv} = Doku.do
   let
     chatCss = bangCss'
       [ css "grow overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full"
-      , css "scrollbar-track-rounded-full scrollbar-thumb-gray-900 scrollbar-track-gray-800"
-      , css "shadow-md px-3 flex flex-col flow flex-nowrap"
+      , css "scrollbar-track-rounded-full scrollbar-thumb-gray-800 scrollbar-track-gray-700"
+      , css "px-3 flex flex-col flow flex-nowrap"
       ]
 
     scrollDownChat :: DOM.Element -> Effect Unit
@@ -60,7 +63,7 @@ nut {renderRow, rowsEv, sendMessageEv} = Doku.do
       w <- window
       void $ w # requestAnimationFrame do
         h <- scrollHeight e
-        setScrollTop h e
+        setScrollTop (h * 2.0) e
 
     onChatSelf e = pushChatboxElem e *> scrollDownChat e
 
@@ -73,18 +76,21 @@ nut {renderRow, rowsEv, sendMessageEv} = Doku.do
           liftEffect $ scrollDownChat chatboxSelf
         pushMessageTextEv = combineLatest3 pushTextGo chatboxElemEv inputValEv sendMessageEv
       in
-        D.div (bangCss "flex mt-4 mb-6 px-3 w-full")
+        D.div (bangCss "flex py-2 px-2 my-1 w-full bg-gray-800 rounded-lg")
           [ inputText
               ( (bangCss $ inputCss <> "mr-2 grow")
                   <|> (textInput $ pure pushInputVal)
                   <|> (enterUp $ pushMessageTextEv)
                   <|> ((\_ -> D.Value := "") <$> clearEv)
               )
-          , Btn.gray "Send" (css "px-8") pushMessageTextEv
+          , Btn.gray "Send" (css "px-8 py-0") pushMessageTextEv
           ]
     chatAttrs = chatCss <|> bangId "chatbox" <|> (pure $ D.Self := onChatSelf)
 
-  D.div (bangCss "flex flex-col h-full grow" )
-    [ dynDiffOnlyAddition D.div chatAttrs renderRow rowsEv
+    rowsWithScrollEv = chatboxElemEv # switchMap \chatboxSelf ->
+      doOnNext (\_ -> scrollDownChat chatboxSelf) rowsEv
+
+  D.div (bangCss "flex flex-col h-full grow px-1 pt-1" )
+    [ dynDiffOnlyAddition D.div chatAttrs renderRow rowsWithScrollEv
     , typeBox
     ]

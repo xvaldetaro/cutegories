@@ -36,7 +36,7 @@ grayCss = css "bg-gray-550 hover:bg-gray-400 active:bg-gray-400"
 baseCss :: String
 baseCss = joinWith ""
   [ css "font-semibold px-3 py-1 text-white text-center"
-  , css "rounded-md shadow-md cursor-pointer whitespace-nowrap"
+  , css "rounded-md shadow-md cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:bg-gray-200 disabled:hover:bg-gray-200"
   , css "leading-loose transition select-none touch-manipulation align-middle hover:no-underline "
   , css "active:shadow focus:outline-1 focus:outline-transparent before:hidden break-words "
   ]

@@ -17,7 +17,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
 import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, GameState(..), Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, blankGame)
-import Models.Paths (chatPath, gamePath, guessesPath, playersPath, roomPath, valuationPath)
+import Models.Paths (chatPath, formsPersistPath, gamePath, guessesPath, playersPath, roomPath, valuationPath)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -104,6 +104,7 @@ deleteRoom fb roomId = runExceptT do
   liftSuccess $ deleteDoc fb.db gamePath roomId
   liftSuccess $ deleteDoc fb.db valuationPath roomId
   liftSuccess $ deleteDoc fb.db guessesPath roomId
+  liftSuccess $ deleteDoc fb.db formsPersistPath roomId
 
 deleteRoomPlayers :: FirebaseEnv -> RoomId -> FbAff Unit
 deleteRoomPlayers fb roomId = runExceptT do

@@ -2,7 +2,7 @@ module Core.Room.GameManager where
 
 import Prelude
 
-import App.Env (Env, forceDocPresent)
+import App.Env (Env)
 import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Except (runExceptT)
 import Data.Array (filter, foldl, (:))
@@ -18,7 +18,7 @@ import Data.String (toLower)
 import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
 import Effect.Now (now)
-import Models.Models (Game, GameState(..), Guess, GuessMetadata, Guesses, Player, RoomId, GuessValidationRec, blankGame, blankGuesses, blankValuation)
+import Models.Models (Game, GameState(..), Guess, GuessMetadata, Guesses, Player, RoomId, blankGame, blankGuesses, blankValuation)
 import Models.Paths (gamePath, guessesPath, valuationPath)
 import Platform.FRP.FirebaseFRP (docEvent)
 import Platform.Firebase.Auth (uid)
@@ -28,20 +28,24 @@ import Platform.Firebase.Firestore.Read (getDoc)
 import Platform.Firebase.Firestore.Write (ArrayOp(..), ArrayUpdate, setDoc, updateDoc, updateDoc')
 import Platform.Firebase.Synonyms (FbEvent, FbAff)
 import Platform.Util.ErrorHandling (liftSuccess)
-import Platform.Util.Similarity (findBestMatch)
+import Platform.Util.Similarity (findBestMatch, randomLetter)
 
 observeGame :: FirebaseEnv -> RoomId -> FbEvent (Maybe Game)
 observeGame fb id = docEvent fb.db gamePath id
 
-startGame :: FirebaseEnv -> RoomId -> String -> Number -> FbAff Unit
-startGame fb id topic durationSeconds = do
+startGame :: FirebaseEnv -> RoomId -> String -> Number -> Boolean -> FbAff Unit
+startGame fb id topic durationSeconds addRandomLetter = do
   start <- liftEffect $ unwrap <<< unInstant <$> now
+  rl <- liftEffect if addRandomLetter then (Just <$> randomLetter) else pure Nothing
   let
     endsAt = start + (durationSeconds * 1000.0)
-    game = (blankGame id) { gameState = Started, topic = topic, endsAt = endsAt }
+    game = (blankGame id) { gameState = Started, topic = topic, endsAt = endsAt, randomLetter = rl }
   runExceptT do
     liftSuccess $ setDoc fb.db guessesPath id blankGuesses
     liftSuccess $ updateDoc' fb.db gamePath id game
+
+setAllowNonAdmins :: FirebaseEnv -> RoomId -> Boolean -> FbAff Unit
+setAllowNonAdmins fb roomId v = updateDoc' fb.db gamePath roomId {allowNonAdminToStartGame: v}
 
 changeGameToResults :: FirebaseEnv -> RoomId -> Array Player -> FbAff Unit
 changeGameToResults fb roomId allPlayers = runExceptT do

@@ -21,3 +21,6 @@ guessesPath = "guesses"
 
 valuationPath :: String
 valuationPath = "valuations"
+
+formsPersistPath :: String
+formsPersistPath = "formspersist"

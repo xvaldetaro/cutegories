@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Error.Class (throwError)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Foreign (ForeignError(..), readString)
 import Platform.Firebase.Firestore.DocRef (DocRef)
@@ -45,6 +46,16 @@ type RoomIn r =
 type RoomId = String
 type Room = RoomIn (id :: UserId)
 
+type FormsPersistRow =
+  ( duration :: Number
+  , topic :: String
+  , addRandomLetter :: Boolean
+  )
+type FormsPersist = { | FormsPersistRow }
+
+blankFormsPersist :: FormsPersist
+blankFormsPersist = { duration: 60.0, topic: "", addRandomLetter: false }
+
 type ChatMessageId = String
 type ChatMessageIn r = { ts :: Number, sender :: PlayerId, text :: String | r }
 type ChatMessage = ChatMessageIn (id :: ChatMessageId)
@@ -59,23 +70,25 @@ blankGuesses = { guesses: [] }
 
 type Game =
   { topic :: String
-  , ready :: Array String
   , guessMetadataArray :: Array GuessMetadata
   , endsAt :: Number
   , gameState :: GameState
+  , randomLetter :: Maybe String
   , id :: String
   , scoresConfig :: ScoresConfig
+  , allowNonAdminToStartGame :: Boolean
   }
 
 blankGame :: String -> Game
 blankGame id =
   { topic: ""
   , gameState: NotStarted
-  , ready: []
   , id
   , endsAt: 0.0
+  , randomLetter: Nothing
   , guessMetadataArray: []
   , scoresConfig: blankScoresConfig
+  , allowNonAdminToStartGame: true
   }
 
 type GuessMetadata = { text :: String, players :: Array Player, similars :: Ratings }
@@ -98,6 +111,7 @@ blankScoresConfig = { repeatedValue: 1, uniqueValue: 3 }
 derive instance genericGameState :: Generic GameState _
 instance showGameState :: Show GameState where
   show = genericShow
+derive instance eqGameState :: Eq GameState
 
 instance readForeignGameState :: ReadForeign GameState where
   readImpl fo = do

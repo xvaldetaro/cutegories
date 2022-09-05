@@ -16,3 +16,5 @@ export const findBestMatch = (str) => (others) => {
   });
   return ratings;
 }
+
+export const randomLetter = () => String.fromCharCode(97+Math.floor(Math.random() * 26))

@@ -11,6 +11,7 @@ import Data.Array (snoc)
 import Data.DateTime.Instant (unInstant)
 import Data.Either (either)
 import Data.Int (floor)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Newtype (unwrap)
 import Data.String (trim)
 import Data.Time.Duration (Milliseconds(..), Seconds(..), toDuration)
@@ -33,7 +34,7 @@ import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Take (take)
 import Paraglider.Operator.Timeout (timeoutAt)
 import Paraglider.Operator.ToAff (toAff)
-import Platform.Deku.Html (bangCss, css)
+import Platform.Deku.Html (bangCss, combineCss, css, hideIf, showIf)
 import Platform.Deku.Misc (cleanFbAff, useCleanFbEvent)
 import Platform.Firebase.Auth (uid)
 
@@ -72,6 +73,8 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv, playersEv} = Doku.do
         [ D.span (bangCss "text-lg font-semibold") [text_ "The Category is: "]
         , D.span (bangCss "text-2xl text-blue-300 mt-2") [text $ (_.topic) <$> gameEv ]
         , D.span (bangCss "text-lg mt-3") [text $ mkRemainingSecondsHeadline <$> countdownEv]
+        , D.span (combineCss [pure $ css "", showIf <<< isJust <<< (_.randomLetter) <$> gameEv ])
+            [text $ fromMaybe "" <<< (_.randomLetter) <$> gameEv]
         ]
 
     timeoutEv = gameEv # switchMap \{endsAt} -> timeoutAt (Milliseconds endsAt)

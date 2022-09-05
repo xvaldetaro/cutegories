@@ -4,4 +4,4 @@ import Prelude
 
 import Effect (Effect)
 
-foreign import scrollChat :: Effect Unit
+foreign import copyUrlToClipboard :: Effect Unit

@@ -17,7 +17,7 @@ import Nuts.Dumb.Btn (grayCss, redCss, tealCss)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Results.ValidationTable (ValidationTable, hasAnyRepetition, isInvalid, isRepeated)
 import Nuts.Room.ResultsEnv (ResultsEnv)
-import Platform.Deku.Html (bangCss, combineCss, css, hiddenIf)
+import Platform.Deku.Html (bangCss, combineCss, css, hideIf)
 import Platform.Deku.Misc (cleanFbAff, ife)
 
 nut :: ResultsEnv -> Event ValidationTable -> GuessMetadata -> Nut
@@ -28,7 +28,7 @@ nut {env: env@{fb}, roomId} vtEv {text, players, similars} = D.div
     ]
   )
   [ renderCardHeader
-  , D.div (combineCss [pure $ css "flex", hiddenIf <$> isInvalidEv text]) [renderSimilars]
+  , D.div (combineCss [pure $ css "flex", hideIf <$> isInvalidEv text]) [renderSimilars]
   ]
 
   where

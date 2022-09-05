@@ -3,29 +3,25 @@ module Nuts.Room.RoomNut where
 import Prelude
 
 import App.Env (Env, forceDocPresent)
-import App.Navigation (navigate)
-import App.Route as Route
 import Control.Alt ((<|>))
 import Core.Room.GameManager (observeGame)
 import Core.Room.RoomManager (observeChat, observeRoom, observeRoomPlayers)
 import Data.Array (find)
-import Data.Either (Either(..))
-import Data.Filterable (filterMap)
-import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..))
+import Data.Maybe (isJust)
 import Deku.Control (switcher, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
+import FRP.Event (Event)
 import Models.Models (GameState(..), RoomId)
+import Models.Paths (formsPersistPath)
 import Nuts.Game.GameNut as GameNut
 import Nuts.Game.ResultsNut as ResultsNut
-import Nuts.Waiting.RoomChat as RoomChat
-import Nuts.Waiting.Controls as RoomLeftBar
-import Nuts.Waiting.PlayerListContainer as RoomRightBar
-import Paraglider.Operator.Combine (combineLatest)
-import Paraglider.Operator.DoOnNext (doOnNext)
-import Paraglider.Operator.InitialIfAsync (initialIfAsync)
+import Nuts.Room.JoinRoomBlock as JoinRoomBlock
+import Nuts.Waiting.Waiting as Waiting
+import Paraglider.Operator.Combine (combineLatest3)
+import Paraglider.Operator.DistinctUntilChanged (distinctUntilChangedBy)
+import Paraglider.Operator.FromAff (fromAff)
 import Platform.Deku.Html (bangCss)
 import Platform.Deku.Misc (useCleanFbEvent)
 import Platform.Firebase.Auth (uid)
@@ -33,41 +29,27 @@ import Platform.Firebase.Auth (uid)
 nut :: Env -> RoomId -> Nut
 nut env@{ fb, self } roomId = Doku.do
   roomEv <- useCleanFbEvent env $ forceDocPresent <$> observeRoom fb roomId
-  playersEv' <- useCleanFbEvent env $ observeRoomPlayers fb roomId
+  playersEv <- useCleanFbEvent env $ observeRoomPlayers fb roomId
   chatEv <- useCleanFbEvent env $ observeChat fb roomId
   gameEv <- useCleanFbEvent env $ forceDocPresent <$> observeGame fb roomId
 
   let
-    playersEv = playersEv' # doOnNext \players -> case find (\{id} -> id == uid self) players of
-      Nothing -> navigate Route.Landing
-      Just _ -> pure unit
+    isInRoomEv :: Event Boolean
+    isInRoomEv = playersEv <#> (isJust <<< find (\{id} -> id == uid self))
 
-    roomEnv =
-      { env
-      , roomId
-      , roomEv: roomEv
-      , playersEv: playersEv
-      , chatEv: chatEv
-      }
+    roomEnv = { env , roomId , roomEv , playersEv , chatEv , gameEv }
 
-    roomPage =
-      D.div (bangCss "flex h-full items-stretch")
-        [ RoomLeftBar.nut roomEnv
-        , RoomChat.nut roomEnv
-        , RoomRightBar.nut roomEnv
-        ]
+    gameStateChangedEv = distinctUntilChangedBy (_.gameState) gameEv
+    renderEv = combineLatest3 render gameStateChangedEv roomEv isInRoomEv
 
-    gameEnv = { env, roomId, roomEv, gameEv, playersEv }
-    gamePage = GameNut.nut gameEnv
+    render game room isInRoom = if not isInRoom then JoinRoomBlock.nut env room else
+      case game.gameState of
+        NotStarted -> Waiting.nut roomEnv
+        Started -> GameNut.nut { env, roomId, roomEv, gameEv, playersEv }
+        Results -> ResultsNut.nut { env, roomId, roomEv, playersEv, game }
+    renderWithLoadingEv = renderEv <|> pure loadingDiv
 
-    loadingOrDataEv = initialIfAsync Nothing $ Just <$> roomEv
-
-  (combineLatest Tuple loadingOrDataEv gameEv) # switcher D.div (bangCss "h-full items-center justify-center") case _ of
-    Tuple Nothing _ -> loadingDiv
-    Tuple _ game -> case game.gameState of
-      NotStarted -> roomPage
-      Started -> gamePage
-      Results -> ResultsNut.nut { env, roomId, roomEv, playersEv, game }
+  switcher D.div (bangCss "h-full w-full bg-gray-800") identity renderWithLoadingEv
 
   where
   loadingDiv = D.div_ [text_ "Loading..."]
