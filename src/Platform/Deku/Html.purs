@@ -58,12 +58,12 @@ hideIf x = if x then css "hidden" else ""
 showIf :: Boolean -> String
 showIf x = if x then "" else css "hidden"
 
-checkboxListener
-  :: Event (Boolean -> Effect Unit)
-  -> Event (Attribute D.Input_)
-checkboxListener = alt (pure $ D.Xtype := "checkbox") <<< map
-  ( \push ->
-      D.OnInput := cb \e -> for_
-        (target e >>= fromEventTarget)
-        (checked >=> push)
-  )
+-- checkboxListener
+--   :: Event (Boolean -> Effect Unit)
+--   -> Event (Attribute D.Input_)
+-- checkboxListener = alt (pure $ D.Xtype := "checkbox") <<< map
+--   ( \push ->
+--       D.OnInput := cb \e -> for_
+--         (target e >>= fromEventTarget)
+--         (checked >=> push)
+--   )

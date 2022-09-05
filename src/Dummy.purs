@@ -9,8 +9,10 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Effect.Now (nowDateTime)
-import FRP.Event (create, subscribe)
+import FRP.Event (Event, create, subscribe)
+import Heterogeneous.Folding (hfoldlWithIndex)
 import Paraglider.Operator.DiffAccum (diffAccum)
+import Paraglider.Operator.Multiplex (multiplex)
 import Platform.Firebase.Firestore.Query as Query
 import Platform.Util.ErrorHandling (liftEither')
 import Simple.JSON (unsafeStringify)
@@ -35,8 +37,16 @@ b s = s <> "asfd"
 
 main :: Effect Unit
 main = do
-  let (x :: {a :: Maybe Number, b :: Maybe String}) =  {a : Nothing, b : Just "asdf"}
-  log $ unsafeStringify $ JSON.writeImpl x
+  e0 <- create
+  e1 <- create
+  e2 <- create
+  void $ subscribe (multiplex { e0: e0.event, e1: e1.event, e2: e2.event }) \e -> log $ show e
+  e0.push 1
+  e1.push "bar"
+  e2.push "baz"
+  -- let (x :: {a :: Maybe Number, b :: Maybe String}) =  {a : Nothing, b : Just "asdf"}
+  -- log $ unsafeStringify $ JSON.writeImpl x
+  -- multiplex { e1: pure "asdf", e2: pure 2, e3: pure {a:"a"}}
   -- f <- liftEither' (const unit) $ parseFormatString "MM/DD/YY - hh:m a"
   -- now <- lift nowDateTime
   -- lift $ log $ format f now

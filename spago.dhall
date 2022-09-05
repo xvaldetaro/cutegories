@@ -28,6 +28,7 @@ to generate this file without the comments in this block.
   , "foldable-traversable"
   , "foreign"
   , "formatters"
+  , "heterogeneous"
   , "hyrule"
   , "hyrule-paraglider"
   , "integers"

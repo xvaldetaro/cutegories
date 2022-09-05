@@ -13,3 +13,5 @@ single guess mode
 
 category bank
   * with topic
+
+Multiple categories like scattergories

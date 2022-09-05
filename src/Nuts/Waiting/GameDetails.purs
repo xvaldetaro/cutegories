@@ -2,34 +2,30 @@ module Nuts.Waiting.GameDetails where
 
 import Prelude
 
-import Bolson.Core (bussed)
 import Control.Alt ((<|>))
 import Core.Room.FormsPersistManager (getFormsPersist, saveFormsPersist)
 import Core.Room.GameManager (setAllowNonAdmins, startGame)
-import Data.Either (either)
 import Data.Int (floor)
-import Data.String (null)
 import Data.Tuple.Nested ((/\))
 import Deku.Attribute (attr, (:=))
 import Deku.Control (text, text_)
 import Deku.Core (Domable)
 import Deku.DOM as D
 import Deku.Do as Doku
-import Deku.Listeners (click)
+import Deku.Listeners (checkbox, click)
 import Deku.Listeners as DL
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
 import FRP.Event.VBus (V)
 import Models.Models (FormsPersistRow)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText')
 import Nuts.Room.RoomEnv (RoomEnv)
-import Paraglider.Operator.Combine (combineLatest, combineLatest3)
+import Paraglider.Operator.Combine (combineLatest3)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.Take (take)
-import Platform.Deku.Html (bangCss, bangPlaceholder, checkboxListener, combineCss, css)
-import Platform.Deku.Misc (cleanFbAff, ife, useCleanFbEvent, useStatefulDom)
+import Platform.Deku.Html (bangCss, bangPlaceholder, css)
+import Platform.Deku.Misc (cleanFbAff, ife, useCleanFbEvent)
 import Platform.Deku.VBusHelp (vbussedFrom)
 import Platform.Firebase.Auth (uid)
 import Type.Proxy (Proxy(..))
@@ -59,7 +55,7 @@ nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
               ( (bangCss $ (css "mr-3") <> inputCss)
                 <|> (pure $ D.Xtype := "checkbox")
                 <|> (attr D.Checked <<< show <$> (take 1 isAllowedEv))
-                <|> (checkboxListener $ pure doChangeAllow)
+                <|> (checkbox $ pure doChangeAllow)
               ) []
         ]
       else text_ ""
@@ -93,7 +89,7 @@ nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
             ( (bangCss $ (css "mr-3") <> inputCss)
               <|> (pure $ D.Xtype := "checkbox")
               <|> (attr D.Checked <<< show <<< (_.addRandomLetter) <$> fopeEv)
-              <|> (checkboxListener $ pure p.addRandomLetter)
+              <|> (checkbox $ pure p.addRandomLetter)
             ) []
       ]
 
