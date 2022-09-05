@@ -6,45 +6,42 @@ import Prelude
 import Bolson.Core (envy)
 import Control.Alt ((<|>))
 import Control.Plus (empty)
-import Core.Room.GameManager (addGuess, changeGameToResults, getSelfGuesses)
+import Core.Room.GameManager (changeGameToResults)
 import Core.Room.RoomManager (rmPlayerFromRoom)
-import Data.Array (snoc)
 import Data.DateTime.Instant (unInstant)
-import Data.Either (either)
-import Data.Int (floor)
+import Data.Int (ceil)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Newtype (unwrap)
-import Data.String (trim)
 import Data.Time.Duration (Milliseconds(..), Seconds(..), toDuration)
 import Data.Tuple.Nested ((/\))
 import Deku.Control (text, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
-import Deku.Do (useState, useState')
+import Deku.Do (useState)
 import Deku.Do as Doku
 import Deku.Listeners (click)
 import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
-import FRP.Event (fold, memoize)
+import FRP.Behavior (sample)
+import FRP.Behavior.Time as Behavior
+import FRP.Event (memoize)
 import FRP.Event.Time (interval)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Dumb.Chatbox as Chatbox
 import Nuts.Dumb.Modal (modal)
+import Nuts.Game.GameGuessBox as GameGuessBox
+import Nuts.Game.TimerBar as TimerBar
 import Nuts.Room.GameEnv (GameEnv)
-import Paraglider.Operator.FromAff (fromAff)
+import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.MapEffectful (mapEffectful)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Take (take)
 import Paraglider.Operator.Timeout (timeoutAt)
 import Paraglider.Operator.ToAff (toAff)
 import Platform.Deku.Html (bangCss, combineCss, css, showIf)
-import Platform.Deku.Misc (cleanFbAff, useCleanFbEvent)
+import Platform.Deku.Misc (cleanFbAff)
 import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
-nut {env: env@{errPush, fb, self}, roomId, gameEv, playersEv} = Doku.do
-  lastGuessesSingle <- useCleanFbEvent env $ fromAff $ getSelfGuesses env roomId
-  pushGuess /\ guessesEv' <- useState'
+nut gameEnv@{env: env@{fb, self}, roomId, gameEv, playersEv} = Doku.do
   pushShowConfirm /\ showConfirmEv <- useState false
 
   let
@@ -52,26 +49,20 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv, playersEv} = Doku.do
       let nowNumber = unwrap $ unInstant nowInstant in
       (toDuration $ Milliseconds (endsAt - nowNumber)) :: Seconds
 
-    mkCountdownEv game = remainingTime game <$> interval 1000
+    mkCountdownEv game = (remainingTime game <$> interval 1000)
+      <|> (sample Behavior.instant (pure $ remainingTime game))
+
     countdownEv = switchMap mkCountdownEv (take 1 gameEv)
+    progressEv = combineLatest
+      (\(Seconds s) (Seconds dur) -> ceil $ 100.0 * s / dur)
+      countdownEv
+      (take 1 countdownEv)
 
     doEndGame = launchAff_ $ cleanFbAff env $ do
       players <- toAff playersEv
       changeGameToResults fb roomId players
 
-    renderGuess text = D.div (bangCss "p-2 w-full text-gray-100") [ text_ text ]
-    doPushGuess text = launchAff_ do
-      liftEffect $ pushGuess text
-      eiUnit <- addGuess env roomId text
-      liftEffect $ either errPush pure eiUnit
-    pushGuessEv = pure $ doPushGuess <<< trim
-    lastTextsSingle = map (_.text) <$> lastGuessesSingle
-    guessesEv = lastTextsSingle <|> (lastTextsSingle # switchMap (fold (flip snoc) guessesEv'))
-
-    nonAdminHiddenCss = if isAdmin then "" else css "hidden mt-2"
-
-    mkRemainingSecondsHeadline (Seconds s) = "You have " <> show (floor s)
-      <> " seconds to type guesses!"
+    nonAdminHiddenCss = if isAdmin then "mx-3 mb-4" else css "hidden"
 
     doLeaveRoomEv = pure $ launchAff_ $ cleanFbAff env $ rmPlayerFromRoom fb roomId (uid self)
 
@@ -110,14 +101,14 @@ nut {env: env@{errPush, fb, self}, roomId, gameEv, playersEv} = Doku.do
 
   D.div (bangCss "flex flex-col w-full h-full items-stretch bg-gray-800")
     [ confirmModal
-    , D.div (bangCss "px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
+    , D.div (bangCss "mb-4 px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
         [ leaveBtn
         , headlineDiv
         , D.i (bangCss "text-gray-700 ion-forward text-xl") []
         ]
-    , D.span (bangCss "text-lg mt-3") [text $ mkRemainingSecondsHeadline <$> countdownEv]
+    , D.div (bangCss "mb-4") [ TimerBar.nut progressEv countdownEv]
     , Btn.gray "End Game Early" (nonAdminHiddenCss) (pure doEndGame)
-    , Chatbox.nut {renderRow: renderGuess, rowsEv: guessesEv, sendMessageEv: pushGuessEv}
+    , D.div (bangCss "flex-grow rounded-t-xl bg-gray-700") [GameGuessBox.nut gameEnv]
     ]
 
   where
