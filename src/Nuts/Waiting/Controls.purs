@@ -8,22 +8,23 @@ import App.Route as Route
 import Control.Alt ((<|>))
 import Core.Room.RoomManager (leaveOrDeleteRoom)
 import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.Tuple.Nested ((/\))
-import Deku.Control (text, text_)
+import Deku.Control (text)
 import Deku.Core (Nut)
 import Deku.DOM as D
-import Deku.Do (useState, useState')
+import Deku.Do (useState)
 import Deku.Do as Doku
 import Deku.Listeners (click)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Dumb.Modal (modal)
+import Nuts.Dumb.Modal (btn, dialog)
 import Nuts.Room.RoomEnv (RoomEnv)
 import Nuts.Room.Scrollchat (copyUrlToClipboard)
-import Nuts.Waiting.GameDetails as GameDetails
-import Platform.Deku.Html (bangCss, css)
+import Platform.Deku.Html (bangCss)
+import Platform.Deku.Misc (ife)
 
 nut :: RoomEnv -> Nut
 nut roomEnv@{ env: { fb, self, errPush, appPush }, playersEv, roomId, roomEv } = Doku.do
@@ -52,18 +53,18 @@ nut roomEnv@{ env: { fb, self, errPush, appPush }, playersEv, roomId, roomEv } =
       , D.i ((click $ pure doCopyToClip) <|> bangCss "text-gray-300 ion-forward text-xl") []
       ]
 
-    confirmModal = modal showConfirmEv $ D.div
-      (bangCss "bg-gray-200 rounded-md flex flex-col p-3 m-14")
-      [ D.span (bangCss "text-gray-900 mb-3 ")
-          [ text_ $ "Are you sure you want to " <> dOrL <> " this room?" ]
-      , D.div (bangCss "flex justify-items-stretch w-full")
-          [ Btn.red dOrL "flex-grow mr-1" (doLeaveOrDeleteRoomEv)
-          , Btn.gray "Cancel" "flex-grow ml-1" (pure $ pushShowConfirm false)
-          ]
-      ]
+    confirmDialogOpts =
+      { description: "Are you sure you want to " <> dOrL <> " this room?"
+      , buttons:
+        [ btn { label: dOrL, action: doLeaveOrDeleteRoomEv, colorCss: Btn.redCss }
+        , btn { label: "Cancel", action: (pure $ pushShowConfirm false) }
+        ]
+      }
+
+    confirmDialog = dialog $ (ife (Just confirmDialogOpts) Nothing) <$> showConfirmEv
 
   D.div (bangCss "flex flex-col")
-    [ confirmModal
+    [ confirmDialog
     , header
     ]
 

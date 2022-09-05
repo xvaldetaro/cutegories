@@ -1,6 +1,5 @@
 module Nuts.Game.GameNut where
 
-
 import Prelude
 
 import Bolson.Core (envy)
@@ -10,7 +9,7 @@ import Core.Room.GameManager (changeGameToResults)
 import Core.Room.RoomManager (rmPlayerFromRoom)
 import Data.DateTime.Instant (unInstant)
 import Data.Int (ceil)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Newtype (unwrap)
 import Data.Time.Duration (Milliseconds(..), Seconds(..), toDuration)
 import Data.Tuple.Nested ((/\))
@@ -26,7 +25,7 @@ import FRP.Behavior.Time as Behavior
 import FRP.Event (memoize)
 import FRP.Event.Time (interval)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Dumb.Modal (modal)
+import Nuts.Dumb.Modal (btn, dialog, modal)
 import Nuts.Game.GameGuessBox as GameGuessBox
 import Nuts.Game.TimerBar as TimerBar
 import Nuts.Room.GameEnv (GameEnv)
@@ -41,13 +40,15 @@ import Platform.Deku.Misc (cleanFbAff)
 import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
-nut gameEnv@{env: env@{fb, self}, roomId, gameEv, playersEv} = Doku.do
-  pushShowConfirm /\ showConfirmEv <- useState false
+nut gameEnv@{ env: env@{ fb, self }, roomId, gameEv, playersEv } = Doku.do
+  pushShowConfirm /\ showConfirmEv <- useState true
 
   let
-    remainingTime {endsAt} nowInstant =
-      let nowNumber = unwrap $ unInstant nowInstant in
-      (toDuration $ Milliseconds (endsAt - nowNumber)) :: Seconds
+    remainingTime { endsAt } nowInstant =
+      let
+        nowNumber = unwrap $ unInstant nowInstant
+      in
+        (toDuration $ Milliseconds (endsAt - nowNumber)) :: Seconds
 
     mkCountdownEv game = (remainingTime game <$> interval 1000)
       <|> (sample Behavior.instant (pure $ remainingTime game))
@@ -66,49 +67,52 @@ nut gameEnv@{env: env@{fb, self}, roomId, gameEv, playersEv} = Doku.do
 
     doLeaveRoomEv = pure $ launchAff_ $ cleanFbAff env $ rmPlayerFromRoom fb roomId (uid self)
 
-    confirmModal = modal showConfirmEv $ D.div
-      (bangCss "bg-gray-200 rounded-md flex flex-col p-3 m-14")
-      [ D.span (bangCss "text-gray-900 mb-3 ")
-          [ text_ $ "Are you sure you want to leave this room?" ]
-      , D.div (bangCss "flex justify-items-stretch w-full")
-          [ Btn.red "Leave" "flex-grow mr-1" (doLeaveRoomEv)
-          , Btn.gray "Cancel" "flex-grow ml-1" (pure $ pushShowConfirm false)
-          ]
-      ]
+    confirmLeaveDialog = dialog $ showConfirmEv <#>
+      if _ then Nothing
+      else Just
+        { description: "Are you sure you want to leave this room?"
+        , buttons:
+            [ btn { label: "Leave", action: doLeaveRoomEv, colorCss: Btn.redCss }
+            , btn { label: "Cancel", action: (pure $ pushShowConfirm false) }
+            ]
+        }
 
-    leaveBtn = if isAdmin then text_ "" else D.i
-      ( (click $ pure $ pushShowConfirm true)
-          <|> bangCss "mt-2 ion-arrow-left-a text-xl text-red-200"
-      )
-      []
+    leaveBtn =
+      if isAdmin then text_ ""
+      else D.i
+        ( (click $ pure $ pushShowConfirm true)
+            <|> bangCss "mt-2 ion-arrow-left-a text-xl text-red-200"
+        )
+        []
 
     randomLetterTextEv =
-      D.span (combineCss [pure $ css "", showIf <<< isJust <<< (_.randomLetter) <$> gameEv ])
+      D.span (combineCss [ pure $ css "", showIf <<< isJust <<< (_.randomLetter) <$> gameEv ])
         [ text_ "Starting with letter: "
-        , D.span (bangCss "font-bold text-lg text-blue-200") [text $ fromMaybe "" <<< (_.randomLetter) <$> gameEv]
+        , D.span (bangCss "font-bold text-lg text-blue-200")
+            [ text $ fromMaybe "" <<< (_.randomLetter) <$> gameEv ]
         ]
 
     headlineDiv =
       D.div (bangCss "px-3 mt-2 flex flex-col text-center flex-grow")
-        [ D.span (bangCss "text-lg text-blue-200") [text $ (_.topic) <$> gameEv ]
+        [ D.span (bangCss "text-lg text-blue-200") [ text $ (_.topic) <$> gameEv ]
         , randomLetterTextEv
         ]
 
-    timeoutEv = gameEv # switchMap \{endsAt} -> timeoutAt (Milliseconds endsAt)
+    timeoutEv = gameEv # switchMap \{ endsAt } -> timeoutAt (Milliseconds endsAt)
     endGameEv = if isAdmin then mapEffectful (\_ -> doEndGame) timeoutEv else empty
 
   _ <- envy <<< (memoize endGameEv)
 
   D.div (bangCss "flex flex-col w-full h-full items-stretch bg-gray-800")
-    [ confirmModal
+    [ confirmLeaveDialog
     , D.div (bangCss "mb-4 px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
         [ leaveBtn
         , headlineDiv
         , D.i (bangCss "text-gray-700 ion-forward text-xl") []
         ]
-    , D.div (bangCss "mb-4") [ TimerBar.nut progressEv countdownEv]
+    , D.div (bangCss "mb-4") [ TimerBar.nut progressEv countdownEv ]
     , Btn.gray "End Game Early" (nonAdminHiddenCss) (pure doEndGame)
-    , D.div (bangCss "flex-grow rounded-t-xl bg-gray-700") [GameGuessBox.nut gameEnv]
+    , D.div (bangCss "flex-grow rounded-t-xl bg-gray-700") [ GameGuessBox.nut gameEnv ]
     ]
 
   where
