@@ -23,13 +23,15 @@ import FRP.Event (Event)
 import Models.Models (Player)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Modal (modal)
+import Nuts.Results.ScoresAggregator (PlayerWithScore)
 import Nuts.Room.RoomEnv (RoomEnv)
+import Paraglider.Operator.Combine (combineLatest)
 import Platform.Deku.Html (bangCss, combineCss, css, hideIf, showIf)
 import Platform.Deku.Misc (cleanFbAff, dynDiffOrdered, ife)
 
 nut :: RoomEnv -> Nut
 nut { env: env@{fb, self}, roomId, roomEv, playersEv} = Doku.do
-  pushMbKick /\ (mbKickEv :: Event (Maybe Player)) <- useState Nothing
+  pushMbKick /\ (mbKickEv :: Event (Maybe PlayerWithScore)) <- useState Nothing
 
   let
     kickPlayer {id} = launchAff_ do
@@ -51,11 +53,11 @@ nut { env: env@{fb, self}, roomId, roomEv, playersEv} = Doku.do
           ]
       ]
 
-    rowUi player@{name, id} =
+    rowUi player@{name, score} =
       D.li (bangCss "ml-1 mr-1 mb-1 px-2 flex font-medium text-sm first:font-bold first:text-white rounded-full bg-gray-600 ")
         [ kickButton player
         , D.div (bangCss "") [text_ name]
-        , D.div (bangCss "ml-1 text-teal-100 font-semibold") [text $ idToScoreEv id]
+        , D.div (bangCss "ml-1 text-teal-100 font-semibold") [text_ $ show score]
         ]
 
     kickButton player@{id} = D.i
@@ -69,16 +71,20 @@ nut { env: env@{fb, self}, roomId, roomEv, playersEv} = Doku.do
     ]
 
   where
-  moveMyselfFirst playerArr = fromMaybe playerArr do
-    myIndex <- Array.findIndex (\{id} -> id == myId) playerArr
-    mePlayer <- Array.index playerArr myIndex
-    firstPlayer <- Array.head playerArr
-    pure $ Array.updateAtIndices [0 /\ mePlayer, myIndex /\ firstPlayer] playerArr
+  processPlayers playerArr scoresDict =
+    let
+      withScores = playerArr <#> \{name, id} ->
+        {name, id, score: (fromMaybe 0 $ Map.lookup id scoresDict) }
+      sorted = withScores # Array.sortBy \p1 p2 -> compare p2.score p1.score
+    in
+    fromMaybe sorted do
+      myIndex <- Array.findIndex (\{id} -> id == myId) sorted
+      mePlayer <- Array.index sorted myIndex
+      arrayWithoutMe <- Array.deleteAt myIndex sorted
+      pure $ Array.cons mePlayer arrayWithoutMe
 
   scoresDictEv = roomEv <#> \{scores} -> Map.fromFoldableWith (+) (scores <#> \id -> Tuple id 1)
 
-  playersEvMeFirst = moveMyselfFirst <$> playersEv
+  playersEvMeFirst = combineLatest processPlayers playersEv scoresDictEv
 
-
-  idToScoreEv userId = show <<< fromMaybe 0 <<< Map.lookup userId <$> scoresDictEv
   myId = (_.uid) $ unwrap self
