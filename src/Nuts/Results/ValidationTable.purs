@@ -35,6 +35,9 @@ hasAnyRepetition t {repeatedEdges} = fromMaybe false do
   edges <- Map.lookup t repeatedEdges
   pure $ not $ Set.isEmpty edges
 
+getRepetitions :: String -> ValidationTable -> Maybe (Set String)
+getRepetitions t {repeatedEdges} = Map.lookup t repeatedEdges
+
 isRepeated :: String -> String -> ValidationTable -> Boolean
 isRepeated t1 t2 {repeatedEdges} = fromMaybe false do
   t1Edges <- Map.lookup t1 repeatedEdges

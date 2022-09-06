@@ -1,9 +1,4 @@
-Make "no winner" button for results screen
-carry over repeats from previous rounds
-dyn reorder when items change order
-filter invalids from pills
 hide results commands from non-admins
-add modal to confirm ending game early
 
 Mobile interface
   * Hide nav

@@ -32,7 +32,7 @@ import Nuts.Results.ScoresAggregator (PlayerWithScore, aggregateScores)
 import Nuts.Results.ValidationTable (ValidationTable, mkValidationTable)
 import Nuts.Room.ResultsEnv (ResultsEnv)
 import Paraglider.Operator.Combine (combineLatest)
-import Platform.Deku.Html (bangCss, combineCss, css)
+import Platform.Deku.Html (bangCss, combineCss, css, hideIf, showIf)
 import Platform.Deku.Misc (cleanFbAff, ife, useCleanFbEvent, useMemoBeh')
 import Platform.Firebase.Auth (uid)
 import Platform.Firebase.Synonyms (FbEvent)
@@ -77,18 +77,13 @@ nut resultsEnv@{env: env@{errPush, fb, self}, roomId, playersEv, game} = Doku.do
         , D.div (bangCss "ml-1 text-teal-100 font-semibold") [text_ $ show score]
         ]
 
-    -- renderPlayerScoreRow {name, score} = D.div (bangCss "flex")
-    --   [ D.span (bangCss "text-blue-300 mr-3") [text_ name]
-    --   , D.span (bangCss "text-white") [text_ $ show score]
-    --   ]
-
     confirmWinnerBtn = D.i
       ( (click $ topScorersEv <#> \topScorers -> pushShowConfirm $ Just $ ConfirmWinner topScorers)
-          <|> bangCss "text-teal-600 ion-checkmark text-xl"
+          <|> bangCss ("text-teal-600 ion-checkmark text-xl" <> showIf isAdmin )
       ) []
     discardBtn = D.i
       ( (click $ pure $ pushShowConfirm $ Just DiscardResults)
-          <|> bangCss "text-red-600 ion-close-round text-xl"
+          <|> bangCss ("text-red-600 ion-close-round text-xl" <> showIf isAdmin )
       ) []
 
     confirmationDialog = dialog $ showConfirmEv <#> map case _ of
