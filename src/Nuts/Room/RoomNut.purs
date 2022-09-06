@@ -45,7 +45,7 @@ nut env@{ fb, self } roomId = Doku.do
     render game room isInRoom = if not isInRoom then JoinRoomBlock.nut env room else
       case game.gameState of
         NotStarted -> Waiting.nut roomEnv
-        Started -> GameNut.nut { env, roomId, roomEv, gameEv, playersEv }
+        Started -> GameNut.nut { game, env, roomId, roomEv, gameEv, playersEv }
         Results -> ResultsNut.nut { env, roomId, roomEv, playersEv, game }
     renderWithLoadingEv = renderEv <|> pure loadingDiv
 

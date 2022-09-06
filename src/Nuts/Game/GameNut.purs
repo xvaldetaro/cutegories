@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Newtype (unwrap)
 import Data.Time.Duration (Milliseconds(..), Seconds(..), toDuration)
 import Data.Tuple.Nested ((/\))
-import Deku.Control (text, text_)
+import Deku.Control (text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do (useState)
@@ -25,22 +25,21 @@ import FRP.Behavior.Time as Behavior
 import FRP.Event (memoize)
 import FRP.Event.Time (interval)
 import Nuts.Dumb.Btn as Btn
-import Nuts.Dumb.Modal (btn, dialog, modal)
+import Nuts.Dumb.Modal (btn, dialog)
 import Nuts.Game.GameGuessBox as GameGuessBox
 import Nuts.Game.TimerBar as TimerBar
 import Nuts.Room.GameEnv (GameEnv)
 import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.MapEffectful (mapEffectful)
-import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Take (take)
 import Paraglider.Operator.Timeout (timeoutAt)
 import Paraglider.Operator.ToAff (toAff)
-import Platform.Deku.Html (bangCss, combineCss, css, showIf)
+import Platform.Deku.Html (bangCss, css, showIf)
 import Platform.Deku.Misc (cleanFbAff)
 import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
-nut gameEnv@{ env: env@{ fb, self }, roomId, gameEv, playersEv } = Doku.do
+nut gameEnv@{ env: env@{ fb, self }, game, roomId, playersEv } = Doku.do
   pushShowConfirm /\ showConfirmEv <- useState true
 
   let
@@ -50,10 +49,9 @@ nut gameEnv@{ env: env@{ fb, self }, roomId, gameEv, playersEv } = Doku.do
       in
         (toDuration $ Milliseconds (endsAt - nowNumber)) :: Seconds
 
-    mkCountdownEv game = (remainingTime game <$> interval 1000)
+    countdownEv = (remainingTime game <$> interval 1000)
       <|> (sample Behavior.instant (pure $ remainingTime game))
 
-    countdownEv = switchMap mkCountdownEv (take 1 gameEv)
     progressEv = combineLatest
       (\(Seconds s) (Seconds dur) -> ceil $ 100.0 * s / dur)
       countdownEv
@@ -86,19 +84,19 @@ nut gameEnv@{ env: env@{ fb, self }, roomId, gameEv, playersEv } = Doku.do
         []
 
     randomLetterTextEv =
-      D.span (combineCss [ pure $ css "", showIf <<< isJust <<< (_.randomLetter) <$> gameEv ])
+      D.span (bangCss $ showIf <<< isJust <<< (_.randomLetter) $ game )
         [ text_ "Starting with letter: "
         , D.span (bangCss "font-bold text-lg text-blue-200")
-            [ text $ fromMaybe "" <<< (_.randomLetter) <$> gameEv ]
+            [ text_ $ fromMaybe "" <<< (_.randomLetter) $ game ]
         ]
 
     headlineDiv =
       D.div (bangCss "px-3 mt-2 flex flex-col text-center flex-grow")
-        [ D.span (bangCss "text-lg text-blue-200") [ text $ (_.topic) <$> gameEv ]
+        [ D.span (bangCss "text-lg text-blue-200") [ text_ $ (_.topic) $ game ]
         , randomLetterTextEv
         ]
 
-    timeoutEv = gameEv # switchMap \{ endsAt } -> timeoutAt (Milliseconds endsAt)
+    timeoutEv = timeoutAt (Milliseconds game.endsAt)
     endGameEv = if isAdmin then mapEffectful (\_ -> doEndGame) timeoutEv else empty
 
   _ <- envy <<< (memoize endGameEv)
