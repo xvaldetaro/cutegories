@@ -61,10 +61,11 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
-addScores :: FirebaseEnv -> RoomId -> Maybe (Array String) -> FbAff Unit
-addScores fb roomId mbWinnerIds = updateDoc fb.db roomPath roomId {} au
+addScores :: FirebaseEnv -> RoomId -> Array String -> FbAff Unit
+addScores fb roomId winnerIds = updateDoc fb.db roomPath roomId {} au
   where
-  au = maybe [] (\ids -> [{ field: "scores", op: ArrayUnion, elements: ids}]) mbWinnerIds
+  au = if Array.length winnerIds == 0 then [] else
+    [{ field: "scores", op: ArrayUnion, elements: winnerIds}]
 
 setGameEndSnapshot :: FirebaseEnv -> RoomId -> Game -> FbAff Unit
 setGameEndSnapshot fb roomId game = updateDoc fb.db roomPath roomId patch arr

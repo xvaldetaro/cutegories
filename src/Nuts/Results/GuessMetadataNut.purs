@@ -23,7 +23,7 @@ import Platform.Deku.Misc (cleanFbAff, ife)
 nut :: ResultsEnv -> Event ValidationTable -> GuessMetadata -> Nut
 nut {env: env@{fb}, roomId} vtEv {text, players, similars} = D.div
   (combineCss
-    [ pure $ css "flex flex-col items-start border rounded-t-lg rounded-b-md mb-2"
+    [ pure $ css "flex flex-col items-start border rounded-t-lg rounded-b-md mb-2 bg-gray-700"
     , borColorCss <$> vtEv
     ]
   )
