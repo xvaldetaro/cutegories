@@ -2,6 +2,7 @@
   "name": "nano",
   "version": "1.0.0",
   "description": "",
+  "homepage": "https://xvaldetaro.github.io/cutegories",
   "main": "index.js",
   "scripts": {
     "build": "npm run build-ps && rm -rf docs && mkdir docs && webpack --mode=development",
