@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build-ps && rm -rf dist && mkdir dist webpack --mode=production",
-    "build-ps": "rm -rf .spago/rito && spago build",
+    "build": "npm run build-ps && rm -rf docs && mkdir docs && webpack --mode=development",
+    "build-ps": "spago build",
     "start": "spago build && webpack serve --mode=development"
   },
   "author": "",
