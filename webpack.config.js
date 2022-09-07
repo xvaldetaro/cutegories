@@ -38,22 +38,6 @@ module.exports = {
 				type: "asset/source",
 			},
 			{
-				test: /\.mp3/,
-				type: "asset/resource",
-			},
-			{
-				test: /\.m4a/,
-				type: "asset/resource",
-			},
-			{
-				test: /\.jpg/,
-				type: "asset/resource",
-			},
-			{
-				test: /\.png/,
-				type: "asset/resource",
-			},
-			{
 				test: /\.css$/i,
 				include: [path.resolve(__dirname, "src")],
 				use: ["style-loader", "css-loader", "postcss-loader"],
