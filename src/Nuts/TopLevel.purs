@@ -58,9 +58,9 @@ nut = Doku.do
             pure (Just text) <|> (const Nothing <$> timeout duration)
           )
 
-  D.div (bangCss "w-full h-full bg-gray-900")
+  D.div (bangCss "w-full absolute inset-0 bg-gray-900")
     [
-      D.div (bangId "TopLevel" <|> bangCss "mx-auto flex flex-col h-screen max-w-md text-gray-100 bg-gray-700")
+      D.div (bangId "TopLevel" <|> bangCss "mx-auto flex flex-col h-full max-w-md text-gray-100 bg-gray-700")
         [ D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
         , toast (isJust <$> toastOnOffEv) (text $ fromMaybe "" <$> toastOnOffEv)
         , Nav.nut sharedRouteEv

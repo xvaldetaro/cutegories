@@ -5,6 +5,7 @@ import Prelude
 import Control.Alt (alt)
 import Data.Foldable (for_)
 import Data.String (joinWith)
+import Debug (spy)
 import Deku.Attribute (class Attr, Attribute, attr, cb, (:=))
 import Deku.DOM (Class, Id, Placeholder, Value)
 import Deku.DOM as D
@@ -50,7 +51,7 @@ css s = " " <> s <> " "
 enterUp :: ∀ element. Event (Effect Unit) -> Event (Attribute element)
 enterUp effEv = keyUp $ filterEnter <$> effEv
   where
-  filterEnter eff = \kbEvent -> if KeyboardEvent.code kbEvent == "Enter" then eff else pure unit
+  filterEnter eff = \kbEvent -> if KeyboardEvent.key kbEvent == "Enter" then eff else pure unit
 
 hideIf :: Boolean -> String
 hideIf x = if x then css "hidden" else ""

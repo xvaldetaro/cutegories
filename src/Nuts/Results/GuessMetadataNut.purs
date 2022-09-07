@@ -55,7 +55,7 @@ nut {env: env@{fb}, roomId} vtEv {text, players, similars} = Doku.do
           , hideIf <$> collapseEv
           ]
         )
-        [ D.div
+        [ D.button
             ( (click $ doToggleInvalid <$> vtEv)
               <|> bangCss "flex items-center mr-2 rounded-md bg-gray-600 px-2 mb-2"
             )
@@ -88,8 +88,7 @@ nut {env: env@{fb}, roomId} vtEv {text, players, similars} = Doku.do
       ionIconCssEv = collapseEv <#> ife "ion-chevron-right" "ion-chevron-down"
 
     renderSimilar {target, rating} =
-      D.div (bangCss "flex items-center")
-        [ D.button
+       D.button
           ( (combineCss
               [ pure $ css "mr-2 px-2 text-sm flex items-center" <> btnBaseCss
                 <> css ""
@@ -99,7 +98,6 @@ nut {env: env@{fb}, roomId} vtEv {text, players, similars} = Doku.do
             ) <|> (click $ doTogglePairRepeated text target <$> vtEv)
           )
           [ alertIcon (pure false) rating, text_ target ]
-        ]
 
   D.div
     ( combineCss

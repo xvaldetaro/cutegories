@@ -4,6 +4,7 @@ import Prelude
 
 import App.Env (Env, forceDocPresent)
 import Control.Alt ((<|>))
+import Control.Plus (empty)
 import Core.Room.GameManager (observeGame)
 import Core.Room.RoomManager (observeChat, observeRoom, observeRoomPlayers)
 import Data.Array (find)
@@ -30,14 +31,14 @@ nut :: Env -> RoomId -> Nut
 nut env@{ fb, self } roomId = Doku.do
   roomEv <- useCleanFbEvent env $ forceDocPresent <$> observeRoom fb roomId
   playersEv <- useCleanFbEvent env $ observeRoomPlayers fb roomId
-  chatEv <- useCleanFbEvent env $ observeChat fb roomId
+  -- chatEv <- useCleanFbEvent env $ observeChat fb roomId
   gameEv <- useCleanFbEvent env $ forceDocPresent <$> observeGame fb roomId
 
   let
     isInRoomEv :: Event Boolean
     isInRoomEv = playersEv <#> (isJust <<< find (\{id} -> id == uid self))
 
-    roomEnv = { env , roomId , roomEv , playersEv , chatEv , gameEv }
+    roomEnv = { env , roomId , roomEv , playersEv, gameEv, chatEv: empty }
 
     gameStateChangedEv = distinctUntilChangedBy (_.gameState) gameEv
     renderEv = combineLatest3 render gameStateChangedEv roomEv isInRoomEv

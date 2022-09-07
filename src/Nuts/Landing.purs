@@ -44,6 +44,7 @@ nut env = Doku.do
   pushNewRoomTitle /\ newRoomTitleEv <- useState ""
   let myId = (_.uid) (unwrap env.self)
   myPlayerEv <- envyAffResult $ getPlayerForUser env.fb myId
+  pa /\ ae <- useState ""
 
   let
     errorEv = errorEv' <|> (Just <<< show <$> errorEvent myPlayerEv)

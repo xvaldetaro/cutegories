@@ -6,6 +6,7 @@ import Data.Newtype (unwrap)
 import Deku.Control (text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
+import Deku.Do (useState)
 import Nuts.Room.RoomEnv (RoomEnv)
 import Nuts.Waiting.Controls as WaitingControls
 import Nuts.Waiting.GameDetails as GameDetails
@@ -21,7 +22,7 @@ nut roomEnv@{env: {self}, roomId, gameEv} = Doku.do
       , WaitingPlayerList.nut roomEnv
       , GameDetails.nut roomEnv
       ]
-    , D.div (bangCss "flex-grow-0 rounded-t-xl h-64 bg-gray-700") [RoomChat.nut roomEnv]
+    -- , D.div (bangCss "rounded-t-xl max-h-64 bg-gray-700") [RoomChat.nut roomEnv]
     ]
 
   where
