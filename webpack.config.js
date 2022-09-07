@@ -3,13 +3,29 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const CopyPlugin = require("copy-webpack-plugin");
 
+function normalizeName(name) {
+  return name.replace(/node_modules/g, "").replace(/[\-_.|]+/g, " ")
+    .replace(/\b(vendors|nodemodules|js|modules|es)\b/g, "")
+    .trim().replace(/ +/g, "-");
+}
+
 module.exports = {
 	mode: "development",
 	entry: "./src/index.js",
 	output: {
 		path: path.resolve(__dirname, "docs"),
-		filename: "bundle.js",
+		filename: "[name].bundle.js",
 	},
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      name: (module, chunks, cacheGroupKey) => {
+        const allChunksNames = chunks.map((chunk) => chunk.name).join('~');
+        const prefix = cacheGroupKey === 'defaultVendors' ? 'vendors' : cacheGroupKey;
+        return `${prefix}~${allChunksNames}`;
+      },
+    },
+  },
 	plugins: [
 		new HtmlWebpackPlugin({
 			template: "public/index.html",
