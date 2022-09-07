@@ -19,6 +19,7 @@ import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do (useState)
 import Deku.Do as Doku
+import Deku.Listeners (click)
 import Deku.Listeners as DL
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -148,6 +149,13 @@ nut env = Doku.do
       , createGameBlock
       , break "Join"
       , joinGameBlock
+      , D.div
+        ( (bangCss $ "flex-grow align-text-bottom flex mt-auto" <> Btn.baseCss <> Btn.grayCss)
+          <|> click (pure $ navigate Route.Bank)
+        )
+          [ D.div_ [text_ "Categories Bank"]
+          , D.i (bangCss "ml-2 ion-folder text-xl") []
+          ]
       ]
 
   myPlayerEv # switcher_ D.div case _ of

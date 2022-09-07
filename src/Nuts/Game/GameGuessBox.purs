@@ -22,7 +22,6 @@ import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Platform.Deku.Html (bangCss)
 import Platform.Deku.Misc (useCleanFbEvent)
-import Platform.Firebase.Auth (uid)
 
 nut :: GameEnv -> Nut
 nut {env: env@{errPush}, roomId } = Doku.do

@@ -15,7 +15,7 @@ import Platform.Deku.Html (bangCss)
 
 nut :: RoomEnv -> Nut
 nut roomEnv@{env: {self}, roomId, gameEv} = Doku.do
-  D.div (bangCss "flex flex-col md:flex-row w-full h-full items-stretch bg-gray-800")
+  D.div (bangCss "flex flex-col w-full h-full items-stretch bg-gray-800")
     [ D.div (bangCss "flex-grow overflow-auto w-full")
       [ WaitingControls.nut roomEnv
       , WaitingPlayerList.nut roomEnv

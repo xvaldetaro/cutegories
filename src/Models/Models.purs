@@ -106,6 +106,8 @@ type ScoresConfig = { repeatedValue :: Int, uniqueValue :: Int }
 blankScoresConfig :: ScoresConfig
 blankScoresConfig = { repeatedValue: 1, uniqueValue: 3 }
 
+type Bank = { id :: String,  categories :: Array String }
+blankBank id = { id, categories: [] }
 --
 
 derive instance genericGameState :: Generic GameState _

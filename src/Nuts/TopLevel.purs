@@ -8,14 +8,15 @@ import App.Route (Route)
 import App.Route as Route
 import Control.Alt ((<|>))
 import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe)
-import Data.Tuple (Tuple(..), fst)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
 import Deku.Control (switcher, text, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
 import FRP.Event (filterMap, keepLatest)
+import Nuts.Bank.BankNut as BankNut
 import Nuts.Debug as Debug
 import Nuts.Dumb.Modal (toast)
 import Nuts.Landing (nut) as Landing
@@ -25,8 +26,8 @@ import Paraglider.Operator.Combine (combineLatest)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.SwitchMap (switchMap)
 import Paraglider.Operator.Timeout (timeout)
-import Platform.Deku.Html (bangCss, bangId, combineCss, css)
-import Platform.Deku.Misc (envyBurning, ife, wrapLogs)
+import Platform.Deku.Html (bangCss, bangId)
+import Platform.Deku.Misc (envyBurning, wrapLogs)
 
 nut :: Nut
 nut = Doku.do
@@ -37,6 +38,7 @@ nut = Doku.do
     routeToChild (Tuple route env) = case route of
       Route.Landing -> Landing.nut env
       Route.Room roomId -> RoomNut.nut env roomId
+      Route.Bank -> BankNut.nut env
       Route.Debug -> Debug.nut env
       _ -> text_ "Route not available"
 
@@ -56,10 +58,13 @@ nut = Doku.do
             pure (Just text) <|> (const Nothing <$> timeout duration)
           )
 
-  D.div (bangId "TopLevel" <|> bangCss "flex flex-col h-screen text-gray-100 bg-gray-700")
-    [ -- D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
-      toast (isJust <$> toastOnOffEv) (text $ fromMaybe "" <$> toastOnOffEv)
-    , Nav.nut sharedRouteEv
-    , switcher D.div (bangId "Router" <|> bangCss "h-full overflow-y-auto") routeToChild
-        (combineLatest Tuple sharedRouteEv envEv)
+  D.div (bangCss "w-full h-full bg-gray-900")
+    [
+      D.div (bangId "TopLevel" <|> bangCss "mx-auto flex flex-col h-screen max-w-md text-gray-100 bg-gray-700")
+        [ D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
+        , toast (isJust <$> toastOnOffEv) (text $ fromMaybe "" <$> toastOnOffEv)
+        , Nav.nut sharedRouteEv
+        , switcher D.div (bangId "Router" <|> bangCss "h-full overflow-y-auto") routeToChild
+            (combineLatest Tuple sharedRouteEv envEv)
+        ]
     ]

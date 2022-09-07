@@ -24,3 +24,6 @@ valuationPath = "valuations"
 
 formsPersistPath :: String
 formsPersistPath = "formspersist"
+
+bankPath :: String
+bankPath = "banks"

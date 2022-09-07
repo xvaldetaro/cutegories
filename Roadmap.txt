@@ -1,12 +1,3 @@
-hide results commands from non-admins
-
-Mobile interface
-  * Hide nav
-  * Stack Waiting room menus
-
 single guess mode
-
-category bank
-  * with topic
 
 Multiple categories like scattergories

@@ -11,6 +11,7 @@ import Deku.Attribute (attr, (:=))
 import Deku.Control (text, text_)
 import Deku.Core (Domable)
 import Deku.DOM as D
+import Deku.Do (useState)
 import Deku.Do as Doku
 import Deku.Listeners (checkbox, click)
 import Deku.Listeners as DL
@@ -20,7 +21,9 @@ import FRP.Event.VBus (V)
 import Models.Models (FormsPersistRow)
 import Nuts.Dumb.Btn as Btn
 import Nuts.Dumb.Input (inputCss, inputText')
+import Nuts.Dumb.Modal (modal)
 import Nuts.Room.RoomEnv (RoomEnv)
+import Nuts.Waiting.BankModal as BankModal
 import Paraglider.Operator.Combine (combineLatest3)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.Take (take)
@@ -39,12 +42,17 @@ type UIEvents =
   | FormsPersistRow
   )
 nut :: ∀ l p. RoomEnv -> Domable l p
-nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
+nut roomEnv@{ env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
   fopeEv <- useCleanFbEvent env $ fromAff $ getFormsPersist fb roomId
   p /\ e <- vbussedFrom (Proxy :: _ (V UIEvents)) fopeEv
+  pushShowBank /\ showBankEv <- useState false
 
   let
     topicSetValueEv = e.clearTopic <|> ((_.topic) <$> fopeEv)
+    onBankPickCategory ctg = do
+      pushShowBank false
+      p.clearTopic ctg
+      p.topic ctg
 
     isAllowedEv = gameEv <#> (_.allowNonAdminToStartGame)
     doChangeAllow v = launchAff_ $ cleanFbAff env $ setAllowNonAdmins fb roomId v
@@ -71,6 +79,7 @@ nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
             )
           , D.i (bangCss "ion-close-circled -ml-5" <|> (click $ pure $ p.clearTopic "")) []
           ]
+      , D.i ((bangCss "ml-2 mr-3 ion-folder text-xl") <|> (click $ pure $ pushShowBank true)) []
       ]
 
     durationField = D.label (bangCss "ml-3 flex items-center font-medium mt-2")
@@ -92,6 +101,8 @@ nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
               <|> (checkbox $ pure p.addRandomLetter)
             ) []
       ]
+
+    bankModal = modal showBankEv $ BankModal.nut roomEnv (pushShowBank false) onBankPickCategory
 
   let
     doCreateGame :: String -> Number -> Boolean -> Effect Unit
@@ -116,6 +127,7 @@ nut { env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
             <|> bangCss (Btn.baseCss <> Btn.tealCss <> css "mx-3 mt-2")
         )
         [ text btnTextEv ]
+    , bankModal
     ]
 
   where
