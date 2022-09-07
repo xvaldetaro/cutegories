@@ -50,11 +50,12 @@ type FormsPersistRow =
   ( duration :: Number
   , topic :: String
   , addRandomLetter :: Boolean
+  , allowStop :: Boolean
   )
 type FormsPersist = { | FormsPersistRow }
 
 blankFormsPersist :: FormsPersist
-blankFormsPersist = { duration: 60.0, topic: "", addRandomLetter: false }
+blankFormsPersist = { duration: 60.0, topic: "", addRandomLetter: false, allowStop: false }
 
 type ChatMessageId = String
 type ChatMessageIn r = { ts :: Number, sender :: PlayerId, text :: String | r }
@@ -77,6 +78,7 @@ type Game =
   , id :: String
   , scoresConfig :: ScoresConfig
   , allowNonAdminToStartGame :: Boolean
+  , allowStop :: Boolean
   }
 
 blankGame :: String -> Game
@@ -89,6 +91,7 @@ blankGame id =
   , guessMetadataArray: []
   , scoresConfig: blankScoresConfig
   , allowNonAdminToStartGame: true
+  , allowStop: false
   }
 
 type GuessMetadata = { text :: String, players :: Array Player, similars :: Ratings }

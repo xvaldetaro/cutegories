@@ -11,7 +11,7 @@ module.exports = {
     },
     extend: {
       screens: {
-        'kb': { 'raw': '(min-aspect-ratio: 7/9)' },
+        'kb': { 'raw': '(min-aspect-ratio: 7/9) and (max-width: 640px)' },
         // => @media (min-height: 800px) { ... }
       },
       fontFamily: {

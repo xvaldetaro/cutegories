@@ -85,16 +85,24 @@ nut gameEnv@{ env: env@{ fb, self }, game, roomId, playersEv } = Doku.do
 
     randomLetterTextEv =
       D.span (bangCss $ showIf <<< isJust <<< (_.randomLetter) $ game )
-        [ text_ "Starting with letter: "
-        , D.span (bangCss "font-bold text-lg text-blue-200")
+        [ text_ "with: "
+        , D.span (bangCss "font-bold text-blue-200")
             [ text_ $ fromMaybe "" <<< (_.randomLetter) $ game ]
         ]
 
     headlineDiv =
-      D.div (bangCss "px-3 mt-2 flex flex-col text-center flex-grow")
-        [ D.span (bangCss "text-lg text-blue-200") [ text_ $ (_.topic) $ game ]
+      D.div (bangCss "px-3 mt-2 flex justify-center items-center text-center flex-grow")
+        [ D.span (bangCss "mr-3 text-blue-200") [ text_ $ (_.topic) $ game ]
         , randomLetterTextEv
         ]
+
+    stopButton = if isAdmin || game.allowStop
+      then D.button
+        ((click $ pure $ doEndGame) <|> (bangCss "px-1 rounded-md bg-gray-500"))
+        [ D.i (bangCss "text-teal-500 ion-flag") []
+        , D.span (bangCss "ml-1 font-semibold") [text_ "STOP!"]
+        ]
+      else D.i (bangCss "text-gray-700 ion-forward text-xl") []
 
     timeoutEv = timeoutAt (Milliseconds game.endsAt)
     endGameEv = if isAdmin then mapEffectful (\_ -> doEndGame) timeoutEv else empty
@@ -103,14 +111,13 @@ nut gameEnv@{ env: env@{ fb, self }, game, roomId, playersEv } = Doku.do
 
   D.div (bangCss "flex flex-col w-full h-full items-stretch bg-gray-800")
     [ confirmLeaveDialog
-    , D.div (bangCss "mb-4 kb:hidden px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
+    , D.div (bangCss "kb:hidden px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
         [ leaveBtn
         , headlineDiv
-        , D.i (bangCss "text-gray-700 ion-forward text-xl") []
+        , stopButton
         ]
-    , Btn.gray "End Game Early" (nonAdminHiddenCss) (pure doEndGame)
+    , D.div (bangCss "mb-1 mt-2 bg-gray-700") [ TimerBar.nut progressEv countdownEv ]
     , D.div (bangCss "flex-grow rounded-t-xl bg-gray-700") [ GameGuessBox.nut gameEnv ]
-    , D.div (bangCss "mt-4") [ TimerBar.nut progressEv countdownEv ]
     ]
 
   where

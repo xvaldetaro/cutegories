@@ -130,7 +130,7 @@ nut env = Doku.do
       eiResult :: Either FbErr Unit <- leaveOrDeleteRoom env.fb roomId myId
       liftEffect $ case eiResult of
         Left e -> errorPu $ Just $ show e
-        Right _ -> navigate $ Route.Debug
+        Right _ -> navigate $ Route.Room ""
 
     hasPlayerNut :: PlayerWithRef -> Nut
     hasPlayerNut player = case myRoomId player of

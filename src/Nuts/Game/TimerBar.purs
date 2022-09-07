@@ -15,7 +15,7 @@ import Platform.Deku.Html (bangCss)
 
 nut :: Event Int -> Event Seconds -> Nut
 nut progress seconds =
-  D.div (bangCss "mx-3 mt-3 flex flex-col")
+  D.div (bangCss "mx-3 flex flex-col")
     [ D.div
         (bangCss "bg-gray-600 rounded-full h-3")
         [ D.div
@@ -24,6 +24,6 @@ nut progress seconds =
             ) []
         ]
     , D.span (bangCss "text-blue-300 text-center")
-      [ text $ (\(Seconds s) -> show (floor s) <> " seconds left") <$> seconds
+      [ text $ (\(Seconds s) -> show (floor s) <> "s") <$> seconds
       ]
     ]

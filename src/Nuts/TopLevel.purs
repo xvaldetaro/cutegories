@@ -3,7 +3,7 @@ module Nuts.TopLevel where
 import Prelude
 
 import App.Env (AppEvent(..), Env, mkEnv)
-import App.Navigation (routeChangeEvent)
+import App.Navigation (navigate, routeChangeEvent)
 import App.Route (Route)
 import App.Route as Route
 import Control.Alt ((<|>))
@@ -15,6 +15,7 @@ import Deku.Control (switcher, text, text_)
 import Deku.Core (Nut)
 import Deku.DOM as D
 import Deku.Do as Doku
+import Deku.Listeners (click)
 import FRP.Event (filterMap, keepLatest)
 import Nuts.Bank.BankNut as BankNut
 import Nuts.Debug as Debug
@@ -61,7 +62,8 @@ nut = Doku.do
   D.div (bangCss "w-full absolute inset-0 bg-gray-900")
     [
       D.div (bangId "TopLevel" <|> bangCss "mx-auto flex flex-col h-full max-w-md text-gray-100 bg-gray-700")
-        [ D.div (bangCss "text-lg text-red-500") [text $ appErrEv]
+        [ D.div ((bangCss "text-lg text-red-500") <|> (click $ pure $ navigate Route.Landing))
+            [ text $ appErrEv ]
         , toast (isJust <$> toastOnOffEv) (text $ fromMaybe "" <$> toastOnOffEv)
         , Nav.nut sharedRouteEv
         , switcher D.div (bangId "Router" <|> bangCss "h-full overflow-y-auto") routeToChild
