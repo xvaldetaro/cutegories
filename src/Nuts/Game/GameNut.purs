@@ -103,14 +103,14 @@ nut gameEnv@{ env: env@{ fb, self }, game, roomId, playersEv } = Doku.do
 
   D.div (bangCss "flex flex-col w-full h-full items-stretch bg-gray-800")
     [ confirmLeaveDialog
-    , D.div (bangCss "mb-4 px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
+    , D.div (bangCss "mb-4 kb:hidden px-3 py-2 flex items-center justify-items-stretch w-full bg-gray-700")
         [ leaveBtn
         , headlineDiv
         , D.i (bangCss "text-gray-700 ion-forward text-xl") []
         ]
-    , D.div (bangCss "mb-4") [ TimerBar.nut progressEv countdownEv ]
     , Btn.gray "End Game Early" (nonAdminHiddenCss) (pure doEndGame)
     , D.div (bangCss "flex-grow rounded-t-xl bg-gray-700") [ GameGuessBox.nut gameEnv ]
+    , D.div (bangCss "mt-4") [ TimerBar.nut progressEv countdownEv ]
     ]
 
   where

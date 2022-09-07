@@ -79,7 +79,7 @@ nut roomEnv@{ env: env@{fb, self, errPush}, playersEv, roomId, gameEv} = Doku.do
             )
           , D.i (bangCss "ion-close-circled -ml-5" <|> (click $ pure $ p.clearTopic "")) []
           ]
-      , D.i ((bangCss "ml-2 mr-3 ion-folder text-xl") <|> (click $ pure $ pushShowBank true)) []
+      , D.button (click $ pure $ pushShowBank true) [D.i (bangCss "ml-2 mr-3 ion-folder text-xl") []]
       ]
 
     durationField = D.label (bangCss "ml-3 flex items-center font-medium mt-2")

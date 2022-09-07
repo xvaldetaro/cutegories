@@ -10,6 +10,10 @@ module.exports = {
       lg: "0 8px 16px rgba(0,0,0,0.24)",
     },
     extend: {
+      screens: {
+        'kb': { 'raw': '(min-aspect-ratio: 7/9)' },
+        // => @media (min-height: 800px) { ... }
+      },
       fontFamily: {
         sans: ["Whitney", "Open Sans", ...defaultTheme.fontFamily.sans],
         title: ["Ginto", "Open Sans", ...defaultTheme.fontFamily.sans],
