@@ -16,6 +16,9 @@ module.exports = {
 		path: path.resolve(__dirname, "docs"),
 		filename: "[name].bundle.js",
 	},
+  // Need this because for some reason the default bundle name for firebase (node_modules_firebase_app_dist_index_esm_js.bundle)
+  // causes a bug in gh-pages. The file can't be loaded for some reason. This code below changes the
+  // Default bundle names so that it works.
   optimization: {
     splitChunks: {
       chunks: 'all',
