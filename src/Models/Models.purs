@@ -104,7 +104,7 @@ blankGame id =
   , randomLetter: Nothing
   , guessMetadataArray: []
   , scoresConfig: blankScoresConfig
-  , allowNonAdminToStartGame: true
+  , allowNonAdminToStartGame: false
   , allowStop: false
   , previousLetters: []
   }
