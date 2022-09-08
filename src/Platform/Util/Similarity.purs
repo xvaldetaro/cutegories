@@ -9,4 +9,4 @@ foreign import findBestMatch :: String -> Array String -> Ratings
 type Rating = { target :: String, rating :: Number}
 type Ratings = Array Rating
 
-foreign import randomLetter :: Effect String
+foreign import randomLetter :: Array String -> Effect String

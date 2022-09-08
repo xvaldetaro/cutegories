@@ -56,8 +56,10 @@ nut resultsEnv@{env: env@{errPush, fb, self}, roomId, playersEv, game} = Doku.do
     topScoreEv = fromMaybe 0 <<< map (_.score) <<< head <$> playerScoresEv
 
     doDeclareWinners topScorers = launchAff_ $ cleanFbAff env $ runExceptT do
-      liftSuccess $ addScores fb roomId ((_.id) <$> topScorers)
+      liftSuccess $ addScores fb roomId categoryWithLetter ((_.id) <$> topScorers)
       liftSuccess $ changeGameState fb roomId NotStarted
+      where
+      categoryWithLetter = game.topic <> (fromMaybe "" $ ("_" <> _) <$> game.randomLetter)
 
     doDiscardResults = launchAff_ $ cleanFbAff env $ runExceptT do
       liftSuccess $ changeGameState fb roomId NotStarted

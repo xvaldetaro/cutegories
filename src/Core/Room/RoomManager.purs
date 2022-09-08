@@ -16,8 +16,10 @@ import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Now (now)
-import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, GameState(..), Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, blankGame)
-import Models.Paths (chatPath, formsPersistPath, gamePath, guessesPath, playersPath, roomPath, valuationPath)
+import Effect.Random (random)
+import Foreign.Object as Object
+import Models.Models (Chat, ChatMessage, ChatMessageIn, Game, GameState(..), Player, PlayerIn, PlayerWithRef, Room, RoomId, RoomIn, UserId, PreviousLetters, blankGame)
+import Models.Paths (chatPath, formsPersistPath, gamePath, guessesPath, playersPath, previousLettersPath, roomPath, valuationPath)
 import Platform.FRP.FirebaseFRP (collectionEvent, docEvent)
 import Platform.Firebase.FbErr (FbErr)
 import Platform.Firebase.Firebase (FirebaseEnv)
@@ -61,11 +63,14 @@ observeRoomPlayers fb roomId = sortPlayers $ collectionEvent fb.db q
   sortPlayers = mapFbEvent (Array.sortWith (\{name} -> toLower name))
   q = QL.collection (playersPath roomId) []
 
-addScores :: FirebaseEnv -> RoomId -> Array String -> FbAff Unit
-addScores fb roomId winnerIds = updateDoc fb.db roomPath roomId {} au
-  where
-  au = if Array.length winnerIds == 0 then [] else
-    [{ field: "scores", op: ArrayUnion, elements: winnerIds}]
+addScores :: FirebaseEnv -> RoomId -> String -> Array String -> FbAff Unit
+addScores fb roomId categoryWithLetter winnerIds = do
+  rid <- liftEffect random
+  let
+    winnerWithCategories = winnerIds <#> \playerId -> {playerId, round: categoryWithLetter, rid}
+    au = if Array.length winnerIds == 0 then [] else
+      [{ field: "scores", op: ArrayUnion, elements: winnerWithCategories}]
+  updateDoc fb.db roomPath roomId {} au
 
 setGameEndSnapshot :: FirebaseEnv -> RoomId -> Game -> FbAff Unit
 setGameEndSnapshot fb roomId game = updateDoc fb.db roomPath roomId patch arr
@@ -84,6 +89,7 @@ createRoom { fb, self } myName title =
     liftSuccess $ setDoc fb.db roomPath myId room
     liftSuccess $ addPlayerToRoom fb myId myId {name: myName}
     liftSuccess $ setDoc fb.db gamePath myId (blankGame myId)
+    liftSuccess $ setDoc fb.db previousLettersPath myId ({byTopic: Object.empty} :: PreviousLetters)
 
 addPlayerToRoom :: FirebaseEnv -> RoomId -> UserId -> PlayerIn () -> FbAff Unit
 addPlayerToRoom fb roomId userId playerIn = setDoc fb.db (playersPath roomId) userId playerPlusId
@@ -106,6 +112,7 @@ deleteRoom fb roomId = runExceptT do
   liftSuccess $ deleteDoc fb.db valuationPath roomId
   liftSuccess $ deleteDoc fb.db guessesPath roomId
   liftSuccess $ deleteDoc fb.db formsPersistPath roomId
+  liftSuccess $ deleteDoc fb.db previousLettersPath roomId
 
 deleteRoomPlayers :: FirebaseEnv -> RoomId -> FbAff Unit
 deleteRoomPlayers fb roomId = runExceptT do

@@ -8,6 +8,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.Show.Generic (genericShow)
 import Foreign (ForeignError(..), readString)
+import Foreign.Object (Object)
 import Platform.Firebase.Firestore.DocRef (DocRef)
 import Platform.Util.Similarity (Ratings)
 import Prim.Row (class Lacks, class Union)
@@ -37,9 +38,10 @@ class Subset i o
 instance Union i x o => Subset (Record i) (Record o)
 
 data GameState = NotStarted | Started | Results
+type RoundScore = { playerId :: String, round :: String }
 type RoomIn r =
   { title :: String
-  , scores :: Array UserId
+  , scores :: Array RoundScore
   | r
   }
 
@@ -52,10 +54,19 @@ type FormsPersistRow =
   , addRandomLetter :: Boolean
   , allowStop :: Boolean
   )
+
 type FormsPersist = { | FormsPersistRow }
 
 blankFormsPersist :: FormsPersist
-blankFormsPersist = { duration: 60.0, topic: "", addRandomLetter: false, allowStop: false }
+blankFormsPersist =
+  { duration: 60.0
+  , topic: ""
+  , addRandomLetter: false
+  , allowStop: false
+  }
+
+-- The Doc' id in FB is roomId like everythign else. In the doc each key is a topic
+type PreviousLetters = { byTopic :: Object (Array String) }
 
 type ChatMessageId = String
 type ChatMessageIn r = { ts :: Number, sender :: PlayerId, text :: String | r }
@@ -79,6 +90,9 @@ type Game =
   , scoresConfig :: ScoresConfig
   , allowNonAdminToStartGame :: Boolean
   , allowStop :: Boolean
+  -- Used to exclude letters that have been picked already for consecutive runs on same topic.
+  -- will be cleared when a new topic is run
+  , previousLetters :: Array String
   }
 
 blankGame :: String -> Game
@@ -92,6 +106,7 @@ blankGame id =
   , scoresConfig: blankScoresConfig
   , allowNonAdminToStartGame: true
   , allowStop: false
+  , previousLetters: []
   }
 
 type GuessMetadata = { text :: String, players :: Array Player, similars :: Ratings }
@@ -109,13 +124,15 @@ type ScoresConfig = { repeatedValue :: Int, uniqueValue :: Int }
 blankScoresConfig :: ScoresConfig
 blankScoresConfig = { repeatedValue: 1, uniqueValue: 3 }
 
-type Bank = { id :: String,  categories :: Array String }
+type Bank = { id :: String, categories :: Array String }
 blankBank id = { id, categories: [] }
+
 --
 
 derive instance genericGameState :: Generic GameState _
 instance showGameState :: Show GameState where
   show = genericShow
+
 derive instance eqGameState :: Eq GameState
 
 instance readForeignGameState :: ReadForeign GameState where

@@ -17,4 +17,16 @@ export const findBestMatch = (str) => (others) => {
   return ratings;
 }
 
-export const randomLetter = () => String.fromCharCode(97+Math.floor(Math.random() * 26))
+export const randomLetter = (exclude) => () => {
+  const dict = {};
+  exclude.forEach((l) => {
+    dict[l] = true
+  });
+  let base = Math.floor(Math.random() * 26)
+  let str = String.fromCharCode(97 + base);
+  while (dict[str]) {
+    base = (base + 1) % 26
+    str = String.fromCharCode(97 + base);
+  }
+  return str;
+}

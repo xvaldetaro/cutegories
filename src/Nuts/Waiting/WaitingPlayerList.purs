@@ -74,7 +74,8 @@ nut { env: env@{fb, self}, roomId, roomEv, playersEv} = Doku.do
       arrayWithoutMe <- Array.deleteAt myIndex sorted
       pure $ Array.cons mePlayer arrayWithoutMe
 
-  scoresDictEv = roomEv <#> \{scores} -> Map.fromFoldableWith (+) (scores <#> \id -> Tuple id 1)
+  scoresDictEv = roomEv
+    <#> \{scores} -> Map.fromFoldableWith (+) (scores <#> \{playerId} -> Tuple playerId 1)
 
   playersEvMeFirst = combineLatest processPlayers playersEv scoresDictEv
 

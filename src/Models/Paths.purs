@@ -25,5 +25,8 @@ valuationPath = "valuations"
 formsPersistPath :: String
 formsPersistPath = "formspersist"
 
+previousLettersPath :: String
+previousLettersPath = "previousletters"
+
 bankPath :: String
 bankPath = "banks"

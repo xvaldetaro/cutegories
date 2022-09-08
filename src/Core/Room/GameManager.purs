@@ -5,7 +5,8 @@ import Prelude
 import App.Env (Env)
 import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Except (runExceptT)
-import Data.Array (filter, foldl, (:))
+import Core.Room.PreviousLettersManager (addNewLetter, clearLetters, getPreviousLetters)
+import Data.Array (filter, foldl, length, (:))
 import Data.Array as Array
 import Data.DateTime.Instant (unInstant)
 import Data.Either (note)
@@ -17,6 +18,7 @@ import Data.Newtype (unwrap)
 import Data.String (toLower)
 import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Effect.Now (now)
 import Models.Models (Game, GameState(..), Guess, GuessMetadata, Guesses, Player, RoomId, FormsPersist, blankGame, blankGuesses, blankValuation)
 import Models.Paths (gamePath, guessesPath, valuationPath)
@@ -34,21 +36,33 @@ observeGame :: FirebaseEnv -> RoomId -> FbEvent (Maybe Game)
 observeGame fb id = docEvent fb.db gamePath id
 
 startGame :: FirebaseEnv -> RoomId -> FormsPersist -> FbAff Unit
-startGame fb id {topic, duration, addRandomLetter, allowStop} = do
+startGame fb id {topic, duration, addRandomLetter, allowStop} = runExceptT do
   start <- liftEffect $ unwrap <<< unInstant <$> now
-  rl <- liftEffect if addRandomLetter then (Just <$> randomLetter) else pure Nothing
+  previousLetters' <- liftSuccess $ getPreviousLetters fb id topic
+  mbRandomLetter <- if addRandomLetter
+    then do
+      previousLetters <- if length previousLetters' == 26
+        then do
+          log $ "Clearing letters"
+          liftSuccess $ clearLetters fb id topic
+          pure []
+        else pure previousLetters'
+
+      rl <- liftEffect $ randomLetter previousLetters
+      liftSuccess $ addNewLetter fb id topic rl
+      pure $ Just rl
+    else pure Nothing
   let
     endsAt = start + (duration * 1000.0)
     game = (blankGame id)
       { gameState = Started
       , topic = topic
       , endsAt = endsAt
-      , randomLetter = rl
+      , randomLetter = mbRandomLetter
       , allowStop = allowStop
       }
-  runExceptT do
-    liftSuccess $ setDoc fb.db guessesPath id blankGuesses
-    liftSuccess $ updateDoc' fb.db gamePath id game
+  liftSuccess $ setDoc fb.db guessesPath id blankGuesses
+  liftSuccess $ updateDoc' fb.db gamePath id game
 
 setAllowNonAdmins :: FirebaseEnv -> RoomId -> Boolean -> FbAff Unit
 setAllowNonAdmins fb roomId v = updateDoc' fb.db gamePath roomId { allowNonAdminToStartGame: v }
